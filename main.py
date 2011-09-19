@@ -25,10 +25,14 @@ import sys
 import html2text
 import simplejson
 
+############################################ Main #########################################################
+
 class MainHandler(webapp.RequestHandler):
     def get(self):
         self.response.out.write('Hello world!')
 
+
+############################################ Page Scrape ###################################################
 
 class ScrapePage(webapp.RequestHandler):
      def get(self):
@@ -42,16 +46,12 @@ class ScrapePage(webapp.RequestHandler):
           br.set_handle_referer(True)
           br.set_handle_robots(False)
 
-
-          # Follows refresh 0 but not hangs on refresh > 0
-          #br.set_handle_refresh(gaemechanize._http.HTTPRefreshProcessor(), max_time=1)
-
           # User-Agent (this is cheating, ok?)
           br.addheaders = [('User-agent', 'Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.0.1) Gecko/2008071615 Fedora/3.0.1-1.fc9 Firefox/3.0.1')]
 
           # The site we will navigate into, handling it's session
           br.open('http://www.youtube.com')
-          print ''
+
           # Select the first (index zero) form
           #for f in br.forms():
           #    print ''
@@ -59,7 +59,6 @@ class ScrapePage(webapp.RequestHandler):
  
           # Scrape First Page Looking for Forms 
           br.select_form(nr=1)
-          #print ''
           
           # Executes Query with Given Word
           br.form['search_query'] = 'cats'
@@ -69,10 +68,10 @@ class ScrapePage(webapp.RequestHandler):
           search_links = [l for l in br.links()]
           
           linkcounter = 0   
+
           for link in search_links:
-              linkcounter  = linkcounter + 1
-              #print counter,link
-          
+              linkcounter  += linkcounter
+
           # Selects By Upload Rate (it's a hack now needs to be context independent)         
           br.follow_link(search_links[15])
           html = br.response().read()
@@ -85,26 +84,28 @@ class ScrapePage(webapp.RequestHandler):
           videoData = {} 
           counter_vids = 0
           
-          
           for result in search_results:
               
               counter_vids = counter_vids + 1
               
-              # Gets Elements Within Result
-              
+              # Gets Elements Within Result              
               links = result.findAll('a')
               images = result.findAll('img', attrs = {'alt' : 'Thumbnail'})
               added = result.find('span', attrs = {'class' : 'date-added'}).find(text=True)
               viewcount = result.find('span', attrs = {'class' : 'viewcount'}).find(text=True)              
-
+              
               for image in images:
                   thumb = "http:"+image['src']
               
-              # builds final dict
+              # builds dict with result
               videoData[counter_vids] = { "thumb" : thumb, "dateadded" : added, "viewcount" : viewcount, "link" : "http://www.youtube.com/" + str(links[0]['href'])} # stores in dict
               
-          finalResult = simplejson.dumps(videoData)    
+          finalResult = simplejson.dumps(videoData)
+          
+          print ''
           print finalResult
+
+############################################ Handlers  ###################################################
 
 def main():
     application = webapp.WSGIApplication([('/', ScrapePage)],
