@@ -80,16 +80,13 @@ class StoreVideos(webapp.RequestHandler):
             
         # Checks for videos and just adds the new ones
         for entry in feed.entry:
-            dataModelStore = VideoData()
             
             vidtoken = entry.media.player.url[31:-29] # stripping youtube + gdata path junk
-
-            dataModelStore.get_or_insert(vidtoken)   
             
             if vidtoken in tokens:
                 pass
             else:
-                            
+                dataModelStore = VideoData(key_name=vidtoken)
                 dataModelStore.token = vidtoken
                 dataModelStore.json = simplejson.dumps(self.getVideoInfo(entry))
                 dataModelStore.put()       
