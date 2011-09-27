@@ -1,8 +1,8 @@
 cron:
 - description: store recent Youtube videos
   url: /tasks/store_videos
-  schedule: every 5 minutes
+  schedule: every 15 minutes
 
 - description: monitor database videos
   url: /tasks/monitor_videos
-  schedule: every 10 minutes
+  schedule: every 30 minutes

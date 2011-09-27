@@ -20,6 +20,7 @@ from google.appengine.ext import webapp
 from google.appengine.ext.webapp import util
 from google.appengine.api import urlfetch
 from google.appengine.ext import db
+from google.appengine.ext.webapp import template
 
 # Youtube
 import gdata.youtube.service
@@ -32,7 +33,7 @@ import sys
 import html2text
 import simplejson
 import datetime
-import ast
+import os
 
 # Models
 from models import VideoData
@@ -42,15 +43,15 @@ from models import VideoData
 
 class MainHandler(webapp.RequestHandler):
     def get(self):
-        self.response.out.write('Hello world!')
+        path = os.path.join(os.path.dirname(__file__), 'index.html')
+        self.response.out.write(template.render(path, {}))
 
 ############################################ Display Mechanism ############################################   
         
 class DisplayVideos(webapp.RequestHandler): 
     def get(self):
         """ 
-        Displays all videos.
-        
+        Displays all videos.        
         """
         videoAll = {}
         
@@ -58,29 +59,19 @@ class DisplayVideos(webapp.RequestHandler):
         
         counter = 0
         for video in dataModelRetrieve.all():
-           #print ''
            counter = counter+1
            
            # turn them into dictionaries
-           
-           videoInfo = ast.literal_eval(video.json)
-           videoViews = ast.literal_eval(video.views)
+           videoInfo = eval(video.json)
+           videoViews = eval(video.views)
            videoAll[counter] = { "info" : videoInfo, "views" : videoViews}
         
         result = simplejson.dumps(videoAll)
+        
         self.response.headers['Content-Type'] = 'application/json'
-        #print ''
         self.response.out.write(result)
 
 ############################################ Storing Mechanism ############################################     
-class Ddict(dict):
-    def __init__(self, default=None):
-        self.default = default
-
-    def __getitem__(self, key):
-        if not self.has_key(key):
-            self[key] = self.default()
-        return dict.__getitem__(self, key)
         
 class StoreVideos(webapp.RequestHandler):    
     def get(self):
@@ -125,7 +116,8 @@ class StoreVideos(webapp.RequestHandler):
         else:
             title = "Couldn't retrieve title"
         if  entry.published:
-            date_published = entry.published.text
+
+            date_published = entry.published.text[0:-8] # to simplify we take out milliseconds of date published
         else:
             date_published = "Couldn't retrieve date"
         
@@ -145,27 +137,31 @@ class StoreVideos(webapp.RequestHandler):
         return video
 
     def getVideoViews(self,entry):
-        """ Get video views and store them in a separate entity"""
+        """ 
+        Get video views and store them in a separate entity
+        """
         
         viewsdict = {}
     
         # get current datetime
         now = datetime.datetime.now()
-        nowstr = now.strftime("%Y-%m-%d_%H:%M")
+        nowstr = now.strftime("%Y-%m-%dT%H:%M")
     
         if entry.statistics:
             viewcount = entry.statistics.view_count
             viewsdict[nowstr] = viewcount
         else:
-            viewcount = "Couldn't retrieve views"
-            viewsdict[nowstr] = "N/A"                               
+            viewcount = "0"
+            viewsdict[nowstr] = "0"                               
         
         return viewsdict
 
 
 class MonitorVideos(webapp.RequestHandler):
     def get(self):
-        """ Selects videos from database and tracks their views over time"""
+        """ 
+        Selects videos from database and tracks their views over time
+        """
 
         # get current datetime
         now = datetime.datetime.now()
@@ -174,18 +170,13 @@ class MonitorVideos(webapp.RequestHandler):
         queryModel = VideoData.all()
                 
         for video in queryModel:
-           #print self.getEntryData(video.token)
-            
            # get id
            video_k = db.Key.from_path("VideoData", video.token)
            video_o = db.get(video_k)
            
            # add new key pair to dictionary
-           convertDict = ast.literal_eval(video_o.views)
+           convertDict = eval(video_o.views)
            convertDict[nowstr] = self.getEntryData(video.token)
-           
-           print ''
-           print convertDict
            
            video_o.views = simplejson.dumps(convertDict)
            video_o.put()
@@ -193,7 +184,9 @@ class MonitorVideos(webapp.RequestHandler):
 
       
     def getEntryData(self,entry_id):
-        """ Connect to YT service and gets video viewcount """
+        """ 
+        Connect to YT service and gets video viewcount 
+        """
 
         # Connect to Youtube Service
         yt_service = gdata.youtube.service.YouTubeService()
@@ -202,7 +195,7 @@ class MonitorVideos(webapp.RequestHandler):
         if entry.statistics:
             view_count = entry.statistics.view_count
         else:
-            view_count = "N/A"
+            view_count = "0"
             
         return view_count
         
