@@ -52,15 +52,36 @@ class DisplayVideos(webapp.RequestHandler):
         Displays all videos.
         
         """
+        videoAll = {}
         
-        videos = db.GqlQuery("SELECT * FROM VideoData")
-        for video in videos:
-            videoList = video.json        
+        dataModelRetrieve = VideoData()  
+        
+        counter = 0
+        for video in dataModelRetrieve.all():
+           #print ''
+           counter = counter+1
+           
+           # turn them into dictionaries
+           
+           videoInfo = ast.literal_eval(video.json)
+           videoViews = ast.literal_eval(video.views)
+           videoAll[counter] = { "info" : videoInfo, "views" : videoViews}
+        
+        result = simplejson.dumps(videoAll)
         self.response.headers['Content-Type'] = 'application/json'
-        self.response.out.write(videoList)
+        #print ''
+        self.response.out.write(result)
 
 ############################################ Storing Mechanism ############################################     
+class Ddict(dict):
+    def __init__(self, default=None):
+        self.default = default
 
+    def __getitem__(self, key):
+        if not self.has_key(key):
+            self[key] = self.default()
+        return dict.__getitem__(self, key)
+        
 class StoreVideos(webapp.RequestHandler):    
     def get(self):
         """ 
@@ -124,7 +145,8 @@ class StoreVideos(webapp.RequestHandler):
         return video
 
     def getVideoViews(self,entry):
-
+        """ Get video views and store them in a separate entity"""
+        
         viewsdict = {}
     
         # get current datetime
@@ -158,8 +180,6 @@ class MonitorVideos(webapp.RequestHandler):
            video_k = db.Key.from_path("VideoData", video.token)
            video_o = db.get(video_k)
            
-           
-           
            # add new key pair to dictionary
            convertDict = ast.literal_eval(video_o.views)
            convertDict[nowstr] = self.getEntryData(video.token)
@@ -169,7 +189,6 @@ class MonitorVideos(webapp.RequestHandler):
            
            video_o.views = simplejson.dumps(convertDict)
            video_o.put()
-           
            #video_o.delete()
 
       
@@ -266,7 +285,8 @@ def main():
     application = webapp.WSGIApplication([('/tasks/store_videos', StoreVideos),
                                           ('/tasks/monitor_videos', MonitorVideos),
                                           ('/tasks/scrape_page', ScrapePage),
-                                          ('/view_videos', DisplayVideos)],
+                                          ('/', MainHandler),
+                                          ('/output/display_videos', DisplayVideos)],
                                          debug=True)
     util.run_wsgi_app(application)
 
