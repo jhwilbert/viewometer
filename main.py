@@ -32,6 +32,7 @@ import sys
 import html2text
 import simplejson
 import datetime
+import ast
 
 # Models
 from models import VideoData
@@ -80,16 +81,14 @@ class StoreVideos(webapp.RequestHandler):
             
         # Checks for videos and just adds the new ones
         for entry in feed.entry:
-            
+                        
             vidtoken = entry.media.player.url[31:-29] # stripping youtube + gdata path junk
-            
-            if vidtoken in tokens:
-                pass
-            else:
-                dataModelStore = VideoData(key_name=vidtoken)
-                dataModelStore.token = vidtoken
-                dataModelStore.json = simplejson.dumps(self.getVideoInfo(entry))
-                dataModelStore.put()       
+
+            dataModelStore = VideoData(key_name=vidtoken)
+            dataModelStore.token = vidtoken
+            dataModelStore.json = simplejson.dumps(self.getVideoInfo(entry))
+            dataModelStore.views = simplejson.dumps(self.getVideoViews(entry))
+            dataModelStore.put()       
 
         
     def getVideoInfo(self,entry):
@@ -98,13 +97,7 @@ class StoreVideos(webapp.RequestHandler):
         entry into a dictionary.
         """
         thumbs = []
-        viewsdict = {}
-        
-        # get current datetime
-        print ''
-        now = datetime.datetime.now()
-        nowstr = now.strftime("%Y-%m-%d_%H:%M")
-        
+
         # check if Youtube is returning all objects
         if  entry.media.title:
             title = entry.media.title.text
@@ -114,12 +107,7 @@ class StoreVideos(webapp.RequestHandler):
             date_published = entry.published.text
         else:
             date_published = "Couldn't retrieve date"
-        if entry.statistics:
-            viewcount = entry.statistics.view_count
-            viewsdict[nowstr] = viewcount
-        else:
-            viewcount = "Couldn't retrieve views"
-            viewsdict[nowstr] = "N/A"            
+        
         if entry.media.player:
             url = entry.media.player.url           
         else:
@@ -131,29 +119,59 @@ class StoreVideos(webapp.RequestHandler):
             thumbs = []
         
         # add them to a dict
-        video = { "views" : viewsdict , "title" : title, "date_published" : date_published, "url" : url, "thumbs" : thumbs}
+        video = { "title" : title, "date_published" : date_published, "url" : url, "thumbs" : thumbs}
         
         return video
+
+    def getVideoViews(self,entry):
+
+        viewsdict = {}
+    
+        # get current datetime
+        now = datetime.datetime.now()
+        nowstr = now.strftime("%Y-%m-%d_%H:%M")
+    
+        if entry.statistics:
+            viewcount = entry.statistics.view_count
+            viewsdict[nowstr] = viewcount
+        else:
+            viewcount = "Couldn't retrieve views"
+            viewsdict[nowstr] = "N/A"                               
         
+        return viewsdict
+
 
 class MonitorVideos(webapp.RequestHandler):
     def get(self):
         """ Selects videos from database and tracks their views over time"""
 
-        videosModelStore = VideoData()
-
-
-        video = db.GqlQuery("SELECT * "
-                                "FROM Greeting "
-                                "WHERE ANCESTOR IS :1 "
-                                "ORDER BY date DESC LIMIT 10",
-                                guestbook_key(guestbook_name))
+        # get current datetime
+        now = datetime.datetime.now()
+        nowstr = now.strftime("%Y-%m-%d_%H:%M")
         
-        for video in videosModelStore:
-           print ''
-           print videosModelStore.token
+        queryModel = VideoData.all()
+                
+        for video in queryModel:
            #print self.getEntryData(video.token)
-        
+            
+           # get id
+           video_k = db.Key.from_path("VideoData", video.token)
+           video_o = db.get(video_k)
+           
+           
+           
+           # add new key pair to dictionary
+           convertDict = ast.literal_eval(video_o.views)
+           convertDict[nowstr] = self.getEntryData(video.token)
+           
+           print ''
+           print convertDict
+           
+           video_o.views = simplejson.dumps(convertDict)
+           video_o.put()
+           
+           #video_o.delete()
+
       
     def getEntryData(self,entry_id):
         """ Connect to YT service and gets video viewcount """
