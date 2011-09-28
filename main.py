@@ -71,6 +71,7 @@ class DisplayVideos(webapp.RequestHandler):
         
         counter = 0
         for video in dataModelRetrieve.all():
+           #print ''
            counter = counter+1
            
            # turn them into dictionaries
@@ -220,6 +221,9 @@ class MonitorVideos(webapp.RequestHandler):
         query = VideoData.gql("WHERE checkMeFlag = True")
         logging.info('Checking %i videos', query.count())        
         for video in query:
+                
+           #print self.getEntryData(video.token)
+            
            # get id
            video_k = db.Key.from_path("VideoData", video.token)
            video_o = db.get(video_k)
@@ -253,6 +257,17 @@ class MonitorVideos(webapp.RequestHandler):
         
 class ScrapePage(webapp.RequestHandler):
      def get(self):
+          """
+          Resource retrieves 20 most recent videos of You Tube given a search term. It retrieves them and stores in a datastore object
+          using Mechanize and Beautiful soup.
+          
+          Resource usage:
+          
+          /tasks/scrape_page?search=term
+          
+          """
+          search_term = self.request.get("search")
+          
 
           br = gaemechanize.Browser()
           
@@ -268,28 +283,23 @@ class ScrapePage(webapp.RequestHandler):
 
           # The site we will navigate into, handling it's session
           br.open('http://www.youtube.com')
-
-          # Select the first (index zero) form
-          #for f in br.forms():
-          #    print ''
-          #    print f
  
           # Scrape First Page Looking for Forms 
           br.select_form(nr=1)
           
           # Executes Query with Given Word
-          br.form['search_query'] = 'cats'
+          br.form['search_query'] = search_term
           br.submit()
            
           # Finds all links the page
           search_links = [l for l in br.links()]
           
-          linkcounter = 0   
+          linkcounter = 0
 
           for link in search_links:
               linkcounter  += linkcounter
 
-          # Selects By Upload Rate (it's a hack now needs to be context independent)         
+          # Selects By Upload Rate (it's a hack now, needs to be context independent)         
           br.follow_link(search_links[15])
           html = br.response().read()
           soup = BeautifulSoup(html)
@@ -298,31 +308,48 @@ class ScrapePage(webapp.RequestHandler):
           # Creates Video Dictionary For Results
           search_results = soup.findAll('div', attrs={'class': 'result-item *sr '})
           
-          videoData = {} 
-          counter_vids = 0
-          
           for result in search_results:
-              
-              counter_vids = counter_vids + 1
-              
-              # Gets Elements Within Result              
-              links = result.findAll('a')
-              images = result.findAll('img', attrs = {'alt' : 'Thumbnail'})
-              added = result.find('span', attrs = {'class' : 'date-added'}).find(text=True)
-              viewcount = result.find('span', attrs = {'class' : 'viewcount'}).find(text=True)              
-              
-              for image in images:
-                  thumb = "http:"+image['src']
-              
-              # builds dict with result
-              videoData[counter_vids] = { "thumb" : thumb, "dateadded" : added, "viewcount" : viewcount, "link" : "http://www.youtube.com/" + str(links[0]['href'])} # stores in dict
-              
-          finalResult = simplejson.dumps(videoData)
+              print ''
+              print self.scrapeVideoInfo(result)
+              print self.scrapeVideoViews(result)
+
+     def scrapeVideoInfo(self,result):
+         """ All videos entries are within a href tag, so we have to go through each link 
+         and find which one is which, so first URL is the link, third is title and so on...."""
           
-          print ''
-          print finalResult
-          
-                  
+         # URL & Title - get first entry url
+         urls = result.findAll('a')
+         url = urls[0]['href']
+         title = urls[3]['title']
+
+         # Thumbnail - youtube has two image tags, testing which one is the real thumb
+         thumbs = result.findAll('img', attrs = {'alt' : 'Thumbnail'})
+         
+         for thumb in thumbs:
+             thumb_url = "http:" + thumb['src']           
+             if thumb.has_key('data-thumb'):
+                 thumb_url = "http:" + thumb['data-thumb']
+
+         # Date Published - must do a calculator to get time object
+         date_published = result.find('span', attrs = {'class' : 'date-added'}).find(text=True)
+
+         video = { "title" : title, "date_published" : date_published, "url" : "http://www.youtube.com" + url, "thumbs" : thumb_url}
+         
+         return video
+         
+     def scrapeVideoViews(self,result):
+
+        viewsdict = {}
+
+        # get current datetime
+        now = datetime.datetime.now()
+        nowstr = now.strftime("%Y-%m-%dT%H:%M")
+         
+        viewcount = result.find('span', attrs = {'class' : 'viewcount'}).find(text=True)
+        viewsdict[nowstr] = viewcount[0:-6]                             
+
+        return viewsdict
+                                  
 ############################################ Handlers  ###################################################
 
 def main():
