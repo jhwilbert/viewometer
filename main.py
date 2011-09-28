@@ -221,7 +221,6 @@ class MonitorVideos(webapp.RequestHandler):
         query = VideoData.gql("WHERE checkMeFlag = True")
         logging.info('Checking %i videos', query.count())        
         for video in query:
-                
            #print self.getEntryData(video.token)
             
            # get id
