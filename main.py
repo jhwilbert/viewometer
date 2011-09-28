@@ -100,6 +100,7 @@ class StoreVideos(webapp.RequestHandler):
             dataModelStore.token = vidtoken
             dataModelStore.json = simplejson.dumps(self.getVideoInfo(entry))
             dataModelStore.views = simplejson.dumps(self.getVideoViews(entry))
+            dataModelStore.alertLevel = "initial"
             dataModelStore.put()       
 
         
@@ -145,7 +146,7 @@ class StoreVideos(webapp.RequestHandler):
     
         # get current datetime
         now = datetime.datetime.now()
-        nowstr = now.strftime("%Y-%m-%dT%H:%M")
+        nowstr = now.strftime("%Y-%m-%dT%H:%M") # youtube consistent date format
     
         if entry.statistics:
             viewcount = entry.statistics.view_count
@@ -165,7 +166,7 @@ class MonitorVideos(webapp.RequestHandler):
 
         # get current datetime
         now = datetime.datetime.now()
-        nowstr = now.strftime("%Y-%m-%d_%H:%M")
+        nowstr = now.strftime("%Y-%m-%dT%H:%M") # youtube consistent date format
         
         queryModel = VideoData.all()
                 
