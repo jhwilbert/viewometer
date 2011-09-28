@@ -33,7 +33,6 @@ import sys
 import html2text
 import simplejson
 import datetime
-import ast
 import os
 
 # Models
@@ -64,8 +63,8 @@ class DisplayVideos(webapp.RequestHandler):
            counter = counter+1
            
            # turn them into dictionaries
-           videoInfo = ast.literal_eval(video.json)
-           videoViews = ast.literal_eval(video.views)
+           videoInfo = eval(video.json)
+           videoViews = eval(video.views)
            videoAll[counter] = { "info" : videoInfo, "views" : videoViews}
         
         result = simplejson.dumps(videoAll)
@@ -179,7 +178,7 @@ class MonitorVideos(webapp.RequestHandler):
            video_o = db.get(video_k)
            
            # add new key pair to dictionary
-           convertDict = ast.literal_eval(video_o.views)
+           convertDict = eval(video_o.views)
            convertDict[nowstr] = self.getEntryData(video.token)
            
            video_o.views = simplejson.dumps(convertDict)
