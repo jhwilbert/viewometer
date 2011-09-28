@@ -208,7 +208,14 @@ class ScrapePage(webapp.RequestHandler):
           """
           Resource retrieves 20 most recent videos of You Tube given a search term. It retrieves them and stores in a datastore object
           using Mechanize and Beautiful soup.
+          
+          Resource usage:
+          
+          /tasks/scrape_page?search=term
+          
           """
+          search_term = self.request.get("search")
+          
 
           br = gaemechanize.Browser()
           
@@ -229,7 +236,7 @@ class ScrapePage(webapp.RequestHandler):
           br.select_form(nr=1)
           
           # Executes Query with Given Word
-          br.form['search_query'] = 'funny'
+          br.form['search_query'] = search_term
           br.submit()
            
           # Finds all links the page
