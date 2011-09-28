@@ -335,7 +335,7 @@ class ScrapePage(webapp.RequestHandler):
          
          date_published = result.find('span', attrs = {'class' : 'date-added'}).find(text=True)
         
-         date_published_str = self.formatDate(date_published).strftime("%Y-%m-%dT%H:%M")
+         date_published_str = self.formatDate(date_published).strftime(DATE_STRING_FORMAT)
          
          video = { "title" : title, "date_published" : date_published_str, "url" : "http://www.youtube.com" + url, "thumbs" : thumb_url}
          
@@ -352,7 +352,7 @@ class ScrapePage(webapp.RequestHandler):
         dateList = date.split(" ")
         
         #update current time with when the video was uploaded        
-        if dateList[1] == "minutes":
+        if dateList[1] == "minutes" or dateList[1] == "minute":
             upload_time = now + datetime.timedelta(minutes=-(int(dateList[0]))) 
         if dateList[1] == "hour" or dateList[1] == "hours":
             upload_time = now + datetime.timedelta(hours=-(int(dateList[0])))
@@ -365,7 +365,7 @@ class ScrapePage(webapp.RequestHandler):
 
         # get current datetime
         now = datetime.datetime.now()
-        nowstr = now.strftime("%Y-%m-%dT%H:%M")
+        nowstr = now.strftime(DATE_STRING_FORMAT)
          
         viewcount = result.find('span', attrs = {'class' : 'viewcount'}).find(text=True)
         viewsdict[nowstr] = viewcount[0:-6]                             
