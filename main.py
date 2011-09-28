@@ -34,6 +34,7 @@ import html2text
 import simplejson
 import datetime
 import os
+import time
 
 # Models
 from models import VideoData
@@ -263,7 +264,8 @@ class ScrapePage(webapp.RequestHandler):
 
      def scrapeVideoInfo(self,result):
          """ All videos entries are within a href tag, so we have to go through each link 
-         and find which one is which, so first URL is the link, third is title and so on...."""
+         and find which one is which, so first URL is the link, third is title and so on....
+         """
           
          # URL & Title - get first entry url
          urls = result.findAll('a')
@@ -277,14 +279,35 @@ class ScrapePage(webapp.RequestHandler):
              thumb_url = "http:" + thumb['src']           
              if thumb.has_key('data-thumb'):
                  thumb_url = "http:" + thumb['data-thumb']
-
+         
          # Date Published - must do a calculator to get time object
+         
          date_published = result.find('span', attrs = {'class' : 'date-added'}).find(text=True)
-
-         video = { "title" : title, "date_published" : date_published, "url" : "http://www.youtube.com" + url, "thumbs" : thumb_url}
+        
+         date_published_str = self.formatDate(date_published).strftime("%Y-%m-%dT%H:%M")
+         
+         video = { "title" : title, "date_published" : date_published_str, "url" : "http://www.youtube.com" + url, "thumbs" : thumb_url}
          
          return video
-         
+     
+     def formatDate(self,date):
+        """ 
+        Time calculator function that turns Youtube format x minutes ago into date 
+        objects to store in DB
+        """
+                  
+        # get current datetime
+        now = datetime.datetime.now()
+        dateList = date.split(" ")
+        
+        #update current time with when the video was uploaded        
+        if dateList[1] == "minutes":
+            upload_time = now + datetime.timedelta(minutes=-(int(dateList[0]))) 
+        if dateList[1] == "hour" or dateList[1] == "hours":
+            upload_time = now + datetime.timedelta(hours=-(int(dateList[0])))
+
+        return upload_time
+        
      def scrapeVideoViews(self,result):
 
         viewsdict = {}
