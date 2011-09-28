@@ -32,6 +32,7 @@ import simplejson
 import sys
 import html2text
 import simplejson
+import logging
 import datetime
 import os
 import time
@@ -39,6 +40,17 @@ import time
 # Models
 from models import VideoData
 
+# Constants
+DATE_STRING_FORMAT = "%Y-%m-%dT%H:%M"
+TEN_MINUTES = datetime.timedelta(minutes=10)
+THIRTY_MINUTES = datetime.timedelta(minutes=30)
+ONE_HOUR = datetime.timedelta(hours=1)
+HALF_DAY = datetime.timedelta(hours=12)
+ONE_DAY = datetime.timedelta(days=1)
+ALERT_LEVELS = {'initial': TEN_MINUTES,
+               'regular': HALF_DAY,
+               'low': ONE_DAY,
+               'high': THIRTY_MINUTES}
 
 ############################################ Main #########################################################
 
@@ -102,6 +114,8 @@ class StoreVideos(webapp.RequestHandler):
             dataModelStore.token = vidtoken
             dataModelStore.json = simplejson.dumps(self.getVideoInfo(entry))
             dataModelStore.views = simplejson.dumps(self.getVideoViews(entry))
+            dataModelStore.alertLevel = "initial"
+            dataModelStore.checkMeFlag = False
             dataModelStore.put()       
 
         
@@ -146,8 +160,7 @@ class StoreVideos(webapp.RequestHandler):
         viewsdict = {}
     
         # get current datetime
-        now = datetime.datetime.now()
-        nowstr = now.strftime("%Y-%m-%dT%H:%M")
+        nowstr = datetime.datetime.now().strftime(DATE_STRING_FORMAT) # youtube consistent date format
     
         if entry.statistics:
             viewcount = entry.statistics.view_count
@@ -158,7 +171,44 @@ class StoreVideos(webapp.RequestHandler):
         
         return viewsdict
 
+class SelectBatch(webapp.RequestHandler):
+    def get(self):
+        """
+        Selects the videos from the database that are due a check. This is based on the amount of time since they were last checked and on their alert level.
+        """
+        
+        # find the time now
+        now = datetime.datetime.now()
 
+        queryModel = VideoData.all()
+        count = 0
+        
+        for video in queryModel:
+            # get id
+            video_k = db.Key.from_path("VideoData", video.token)
+            video_o = db.get(video_k)
+
+            # dictionaries are not ordered so need to find most recent entry
+            sortedDict = sorted((eval(video_o.views)).keys(), reverse=True)
+
+            # find the time of the last check
+            lastCheckStr = sortedDict[0]
+            
+            # convert to datetime object for easier comparison
+            lastCheck = datetime.datetime.strptime(lastCheckStr, DATE_STRING_FORMAT)
+            timeElapsed = now - lastCheck
+            
+            # if the amount of time passed since last check exceeds the alertLevel for this video
+            if (timeElapsed > ALERT_LEVELS[video_o.alertLevel]): 
+                video_o.checkMeFlag = True
+                count += 1
+            else:
+                video_o.checkMeFlag = False
+            
+            video_o.put()
+        
+        logging.info('Selected %i videos for checking', count)    
+        
 class MonitorVideos(webapp.RequestHandler):
     def get(self):
         """ 
@@ -167,11 +217,11 @@ class MonitorVideos(webapp.RequestHandler):
 
         # get current datetime
         now = datetime.datetime.now()
-        nowstr = now.strftime("%Y-%m-%d_%H:%M")
+        nowstr = now.strftime(DATE_STRING_FORMAT) # youtube consistent date format
         
-        queryModel = VideoData.all()
-                
-        for video in queryModel:
+        query = VideoData.gql("WHERE checkMeFlag = True")
+        logging.info('Checking %i videos', query.count())        
+        for video in query:
            #print self.getEntryData(video.token)
             
            # get id
@@ -183,6 +233,7 @@ class MonitorVideos(webapp.RequestHandler):
            convertDict[nowstr] = self.getEntryData(video.token)
            
            video_o.views = simplejson.dumps(convertDict)
+           video_o.checkMeFlag = False
            video_o.put()
            #video_o.delete()
 
@@ -325,6 +376,7 @@ class ScrapePage(webapp.RequestHandler):
 
 def main():
     application = webapp.WSGIApplication([('/tasks/store_videos', StoreVideos),
+                                          ('/tasks/select_batch', SelectBatch),
                                           ('/tasks/monitor_videos', MonitorVideos),
                                           ('/tasks/scrape_page', ScrapePage),
                                           ('/', MainHandler),
