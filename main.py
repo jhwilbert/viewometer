@@ -119,7 +119,6 @@ class StoreVideos(webapp.RequestHandler):
             dataModelStore.put() 
             ##db.delete(dataModelStore.all()) #### DELETE ALL ENTRIES
               
-
         
     def getVideoInfo(self,entry):
         """ 
@@ -314,9 +313,23 @@ class ScrapePage(webapp.RequestHandler):
           # Creates Video List For Results
           search_results = soup.findAll('div', attrs = {'class': "result-item *sr "})
           
-           
+          # Store in DB
+          dataModelRetrieve = VideoData()   
+          
           for result in search_results:
               print ''
+              
+              vidtoken =  self.scrapeVideoInfo(result)['url'][31:42] # strip youtube url
+              dataModelStore = VideoData(key_name=vidtoken)
+              dataModelStore.token = vidtoken
+              
+              dataModelStore.json = simplejson.dumps(self.scrapeVideoInfo(result))
+              dataModelStore.views = simplejson.dumps(self.scrapeVideoViews(result))
+
+              dataModelStore.alertLevel = "initial"
+              dataModelStore.checkMeFlag = False
+              dataModelStore.put()
+                            
               print self.scrapeVideoInfo(result)
               print self.scrapeVideoViews(result)
                     
