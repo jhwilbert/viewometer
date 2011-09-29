@@ -116,7 +116,9 @@ class StoreVideos(webapp.RequestHandler):
             dataModelStore.views = simplejson.dumps(self.getVideoViews(entry))
             dataModelStore.alertLevel = "initial"
             dataModelStore.checkMeFlag = False
-            dataModelStore.put()       
+            dataModelStore.put() 
+            ##db.delete(dataModelStore.all()) #### DELETE ALL ENTRIES
+              
 
         
     def getVideoInfo(self,entry):
@@ -157,19 +159,18 @@ class StoreVideos(webapp.RequestHandler):
         Get video views and store them in a separate entity
         """
         
-        viewsdict = {}
+        viewsEntries = []
     
         # get current datetime
         nowstr = datetime.datetime.now().strftime(DATE_STRING_FORMAT) # youtube consistent date format
     
         if entry.statistics:
             viewcount = entry.statistics.view_count
-            viewsdict[nowstr] = viewcount
+            viewsEntries.append({'time': nowstr, 'views': viewcount, 'currentSpeed': 0, 'acceleration': 0})    
         else:
-            viewcount = "0"
-            viewsdict[nowstr] = "0"                               
+            viewsEntries.append({'time': nowstr, 'views': 0, 'currentSpeed': 0, 'acceleration': 0})                            
         
-        return viewsdict
+        return viewsEntries
 
 class SelectBatch(webapp.RequestHandler):
     def get(self):
@@ -187,15 +188,16 @@ class SelectBatch(webapp.RequestHandler):
             # get id
             video_k = db.Key.from_path("VideoData", video.token)
             video_o = db.get(video_k)
-
-            # dictionaries are not ordered so need to find most recent entry
-            sortedDict = sorted((eval(video_o.views)).keys(), reverse=True)
-
-            # find the time of the last check
-            lastCheckStr = sortedDict[0]
+               
+            # get the list of views entries
+            viewsEntries = eval(video_o.views)#sorted(, key='time', reverse=True)
+            
+            # find the time of the last check, should be first in the list
+            lastCheckDict = viewsEntries[len(viewsEntries) -1]
+            #logging.info('last check: %s', lastCheckStr)
             
             # convert to datetime object for easier comparison
-            lastCheck = datetime.datetime.strptime(lastCheckStr, DATE_STRING_FORMAT)
+            lastCheck = datetime.datetime.strptime(lastCheckDict['time'], DATE_STRING_FORMAT)
             timeElapsed = now - lastCheck
             
             # if the amount of time passed since last check exceeds the alertLevel for this video
@@ -229,10 +231,10 @@ class MonitorVideos(webapp.RequestHandler):
            video_o = db.get(video_k)
            
            # add new key pair to dictionary
-           convertDict = eval(video_o.views)
-           convertDict[nowstr] = self.getEntryData(video.token)
+           viewsEntries = eval(video_o.views)
+           viewsEntries.append({'time': nowstr, 'views': self.getEntryData(video.token), 'currentSpeed': 0, 'acceleration': 0})   
            
-           video_o.views = simplejson.dumps(convertDict)
+           video_o.views = simplejson.dumps(viewsEntries)
            video_o.checkMeFlag = False
            video_o.put()
            #video_o.delete()
@@ -242,16 +244,18 @@ class MonitorVideos(webapp.RequestHandler):
         """ 
         Connect to YT service and gets video viewcount 
         """
+        view_count = "0"
 
         # Connect to Youtube Service
         yt_service = gdata.youtube.service.YouTubeService()
-        entry = yt_service.GetYouTubeVideoEntry(video_id=entry_id)
-
-        if entry.statistics:
-            view_count = entry.statistics.view_count
-        else:
-            view_count = "0"
-            
+        try:
+            entry = yt_service.GetYouTubeVideoEntry(video_id=entry_id)
+            if entry.statistics:
+                view_count = entry.statistics.view_count
+                
+        except gdata.service.RequestError:
+            logging.error('request error')
+        
         return view_count
         
         
