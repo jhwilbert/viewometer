@@ -301,17 +301,21 @@ class ScrapePage(webapp.RequestHandler):
 
           # Selects By Upload Rate (it's a hack now, needs to be context independent)         
           br.follow_link(search_links[15])
-          html = br.response().read()
+          
+          html = br.response().read()          
           soup = BeautifulSoup(html)
           soup.prettify()
           
-          # Creates Video Dictionary For Results
-          search_results = soup.findAll('div', attrs={'class': 'result-item *sr '})
           
+          # Creates Video List For Results
+          search_results = soup.findAll('div', attrs = {'class': "result-item *sr "})
+          
+           
           for result in search_results:
               print ''
               print self.scrapeVideoInfo(result)
               print self.scrapeVideoViews(result)
+                    
 
      def scrapeVideoInfo(self,result):
          """ All videos entries are within a href tag, so we have to go through each link 
@@ -322,7 +326,7 @@ class ScrapePage(webapp.RequestHandler):
          urls = result.findAll('a')
          url = urls[0]['href']
          title = urls[3]['title']
-
+         
          # Thumbnail - youtube has two image tags, testing which one is the real thumb
          thumbs = result.findAll('img', attrs = {'alt' : 'Thumbnail'})
          
