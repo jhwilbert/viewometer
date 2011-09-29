@@ -36,6 +36,7 @@ import logging
 import datetime
 import os
 import time
+from urllib2 import HTTPError
 
 # Models
 from models import VideoData
@@ -271,7 +272,6 @@ class ScrapePage(webapp.RequestHandler):
           """
           search_term = self.request.get("search")
           
-
           br = gaemechanize.Browser()
           
           # Browser options
@@ -392,6 +392,76 @@ class ScrapePage(webapp.RequestHandler):
         viewsdict[nowstr] = viewcount[0:-6]                             
 
         return viewsdict
+
+class ScrapeViews(webapp.RequestHandler):
+    def get(self):
+        """ 
+        Selects videos from database and tracks their views over time
+        """
+
+
+        # get current datetime
+        now = datetime.datetime.now()
+        nowstr = now.strftime(DATE_STRING_FORMAT) # youtube consistent date format
+        
+                   
+        query = VideoData.gql("WHERE checkMeFlag = False") # CHANGE THIS BACK TO TRUE WHEN DEPLOYING
+        logging.info('Checking %i videos', query.count()) 
+               
+        for video in query:
+           #print self.getEntryData(video.token)
+
+           # get id
+           video_k = db.Key.from_path("VideoData", video.token)
+           video_o = db.get(video_k)
+
+           # add new key pair to dictionary
+           viewsEntries = eval(video_o.views)
+           viewsEntries[nowstr] = { 'views': self.getEntryData(video.token) }
+
+           video_o.views = simplejson.dumps(viewsEntries)
+           video_o.checkMeFlag = False
+           video_o.put()
+           #video_o.delete()
+
+           #self.getEntryData(video.token)
+           
+    def getEntryData(self,entry_id):
+         """ 
+         Connect to YT service and gets video viewcount 
+         """
+         
+         view_count = 0
+         br = gaemechanize.Browser()
+         
+         # Browser options
+         br.set_handle_equiv(True)
+         br.set_handle_gzip(True)
+         br.set_handle_redirect(True)
+         br.set_handle_referer(True)
+         br.set_handle_robots(False)
+         
+         br.addheaders = [('User-agent', 'Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.0.1) Gecko/2008071615 Fedora/3.0.1-1.fc9 Firefox/3.0.1')]
+         
+         try:
+            br.open('http://www.youtube.com/watch?v='+entry_id)
+         
+         except HTTPError, e:
+             #print "Got error code", e.code
+             pass
+             
+         html = br.response().read()          
+         soup = BeautifulSoup(html)
+         soup.prettify()
+         
+         for tabs in soup.findAll('span', {'class': 'watch-view-count'}):             
+           view_count = str(tabs.contents[1]).lstrip('<strong>')[0:-9].replace(",", "") # this is a hack
+         
+         if(view_count):
+             views = view_count
+         else:
+             views = "0"
+         return views           
                                   
 ############################################ Handlers  ###################################################
 
@@ -400,6 +470,7 @@ def main():
                                           ('/tasks/select_batch', SelectBatch),
                                           ('/tasks/monitor_videos', MonitorVideos),
                                           ('/tasks/scrape_page', ScrapePage),
+                                          ('/tasks/scrape_views', ScrapeViews),
                                           ('/', MainHandler),
                                           ('/output/display_videos', DisplayVideos)],
                                          debug=True)
