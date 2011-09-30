@@ -79,7 +79,8 @@ class DisplayVideos(webapp.RequestHandler):
            # turn them into dictionaries
            videoInfo = eval(video.json)
            videoViews = eval(video.views)
-           videoAll[counter] = { "info" : videoInfo, "views" : videoViews}
+           #videoTags = eval(video.associatedSearch)
+           videoAll[counter] = { "info" : videoInfo, "views" : videoViews, "tags" : video.associatedSearch}
         
         result = simplejson.dumps(videoAll)
         
@@ -88,8 +89,6 @@ class DisplayVideos(webapp.RequestHandler):
 
 ############################################ Storing Mechanism ############################################     
         
-
-
 class SelectBatch(webapp.RequestHandler):
     def get(self):
         """
@@ -188,22 +187,25 @@ class ScrapePage(webapp.RequestHandler):
           dataModelRetrieve = VideoData()   
           
           for result in search_results:
-              print ''
-              
+
               vidtoken =  self.scrapeVideoInfo(result)['url'][31:42] # strip youtube url
               dataModelStore = VideoData(key_name=vidtoken)
               dataModelStore.token = vidtoken
               
               dataModelStore.json = simplejson.dumps(self.scrapeVideoInfo(result))
               dataModelStore.views = simplejson.dumps(self.scrapeVideoViews(result))
-
+              
+              dataModelStore.associatedSearch = search_term.split(" ") 
               dataModelStore.alertLevel = "initial"
               dataModelStore.checkMeFlag = False
               dataModelStore.put()
-                            
-              print self.scrapeVideoInfo(result)
-              print self.scrapeVideoViews(result)
+ 
+              #print ''                           
+              #print self.scrapeVideoInfo(result)
+              #print self.scrapeVideoViews(result)
                     
+          path = os.path.join(os.path.dirname(__file__), 'index.html')
+          self.response.out.write(template.render(path, {}))
 
      def scrapeVideoInfo(self,result):
          """ All videos entries are within a href tag, so we have to go through each link 
@@ -269,8 +271,6 @@ class ScrapeViews(webapp.RequestHandler):
         """ 
         Selects videos from database and tracks their views over time
         """
-
-
         # get current datetime
         now = datetime.datetime.now()
         nowstr = now.strftime(DATE_STRING_FORMAT) # youtube consistent date format
@@ -337,9 +337,7 @@ class ScrapeViews(webapp.RequestHandler):
 ############################################ Handlers  ###################################################
 
 def main():
-    application = webapp.WSGIApplication([('/tasks/store_videos', StoreVideos),
-                                          ('/tasks/select_batch', SelectBatch),
-                                          ('/tasks/monitor_videos', MonitorVideos),
+    application = webapp.WSGIApplication([('/tasks/select_batch', SelectBatch),
                                           ('/tasks/scrape_page', ScrapePage),
                                           ('/tasks/scrape_views', ScrapeViews),
                                           ('/', MainHandler),

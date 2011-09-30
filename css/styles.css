@@ -4,11 +4,15 @@ body {
     font-family:Arial;
     padding: 0px;
 	margin: 0px;
-	overflow:hidden;
+
 
 
 }
 
+.graph {
+    float:left;
+    background:black;
+}
 
 button {
   color: black;
@@ -31,3 +35,9 @@ input {
     margin:0 auto;
 }
 
+.video {
+    float:left;
+    height:400px;
+    background-color:#ededed;
+    margin: 10px;
+}

@@ -14,4 +14,4 @@ class VideoData(db.Model):
     token               = db.TextProperty()
     alertLevel	    	= db.TextProperty()
     checkMeFlag         = db.BooleanProperty()
-    associatedSearch    = db.ReferenceProperty(SearchData)    
+    associatedSearch    = db.ListProperty(str)

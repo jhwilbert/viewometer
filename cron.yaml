@@ -3,8 +3,8 @@ cron:
   url: /tasks/scrape_page
   schedule: every 30 minutes
 
-- description: scans for new videos on youtube with the given words
-  url: /tasks/scrape_page
+- description: update number of views for video in DB
+  url: /tasks/scrape_views
   schedule: every 30 minutes
   
 - description: select videos to check
