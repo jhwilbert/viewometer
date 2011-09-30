@@ -7,22 +7,30 @@
 	<meta name="generator" content="TextMate http://macromates.com/">
 	<meta name="author" content="Joao Wilbert">
 	<!-- Date: 2011-06-06 -->
-		
 
+    <link type="text/css" rel="stylesheet" media="screen" href="css/styles.css" />
 	        
 	<!-- Jquery 1.6.1-->
 
 	<script type="text/javascript" src="javascript/jquery-1.6.1.min.js"></script>
 	<script type="text/javascript" src="javascript/scripts.js"></script>
 	<script type="text/javascript" src="javascript/jquery.flot.js"></script>	
-
-	
-
+    
 </head>
 <body>
-	
-    <div id="placeholder" style="width:600px;height:800px;"></div> 
-	
+
+	<div id="search_form">
+        <form name="input" action="/tasks/scrape_page" method="get">
+        
+            Search You Tube: 
+            <input type="text" name="search" />
+            <button type="submit" value="Submit">Submit</button>
+
+        </form>
+    </div>
+    
+    <!-- <div id="placeholder" style="width:600px;height:800px;"></div> 
+    
 <script type="text/javascript"> 
 $(function () {
 
@@ -33,7 +41,7 @@ $(function () {
     
     $.plot($("#placeholder"), [ d2]);
 });
-</script> 
+</script>  -->
 
 
 </body>

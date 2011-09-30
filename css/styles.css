@@ -1,0 +1,33 @@
+/* CSS */
+
+body {	
+    font-family:Arial;
+    padding: 0px;
+	margin: 0px;
+	overflow:hidden;
+
+
+}
+
+
+button {
+  color: black;
+  font-weight: bold;
+  font-size: 140%;
+  text-transform: uppercase;
+}
+
+input {  
+  height:30px;
+  width:400px;
+}
+
+
+#search_form {
+    padding-top:200px;
+    width:700px;
+    height:300px;
+    border:1px solid black;
+    margin:0 auto;
+}
+
