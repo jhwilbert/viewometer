@@ -25,11 +25,17 @@ $(document).ready(function(){
 
 
 function parseDate(string) {
-    return string
+    string = string.replace("-","/").replace("-","/").split("T")
+    date = new Date(string[0]).getTime();
+    
+    return date
 }
 
 function GraphEntry(views,key) {
+    
     var graphdata = []
+    
+    //console.debug(parseDate("2011-10-05T14:32"));
     
     $.each(views, function(index,value) {
         
@@ -38,17 +44,30 @@ function GraphEntry(views,key) {
         points[1] = parseInt(value);
         
         graphdata.push(points);
-        
     });
     
-    console.log(graphdata);
+    
+    var d2 = graphdata
+    
+    var options = {
+      xaxis: {
+          mode: "time",
+          //timeformat: "%y/%m/%d",          
+          minTickSize: [1, "day"]
+      },
+      yaxis: {
+         min: 0,
+         // max:10
+      }
+    }
+    
 
-    var d2 = [[1, 7], [1, 8], [3, 5]];
-
-    console.log(d2);
+    
+    //console.log(d2);
+    
     
     $(function () {
-        $.plot($("#graph_"+key), [d2]);
+        $.plot($("#graph_"+key), [d2], options);
     });       
 }
 
