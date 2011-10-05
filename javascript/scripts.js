@@ -25,13 +25,19 @@ $(document).ready(function(){
 
 
 function parseDate(string) {
-    string = string.replace("-","/").replace("-","/").split("T")
-    date = new Date(string[0]).getTime();
+    string = string.split("T")
+    stringTime = string[1]
+    stringDate = string[0]
     
-    return date
-}
+    stringTime = stringTime.split(":")
+    stringDate = stringDate.split("-")
+    
+  
+    return new Date(stringDate[0], stringDate[1], stringDate[2], stringTime[0], stringTime[1])
+  }
 
 function GraphEntry(views,key) {
+    
     
     var graphdata = []
     
@@ -40,20 +46,21 @@ function GraphEntry(views,key) {
     $.each(views, function(index,value) {
         
         points = new Array(2);        
-        points[0] = parseDate(index);
+        points[0] = parseDate(index).getTime();
         points[1] = parseInt(value);
         
         graphdata.push(points);
     });
     
+    console.debug(graphdata)
     
     var d2 = graphdata
     
     var options = {
       xaxis: {
           mode: "time",
-          //timeformat: "%y/%m/%d",          
-          minTickSize: [1, "day"]
+          timeformat: "%b %d <br> %H:%M",          
+          //minTickSize: [1, "day"]
       },
       yaxis: {
          min: 0,
@@ -90,7 +97,7 @@ function VideoEntry(key,val) {
      // Create URL  (child)
     $(document.createElement("div")).attr("id","url_"+key).appendTo("#video_"+key).html(val.info['url']);
            
-    $(document.createElement("div")).attr("id","graph_"+key).appendTo("#video_"+key).addClass("graph").css("width","500px").css("height","200px");
+    $(document.createElement("div")).attr("id","graph_"+key).appendTo("#video_"+key).addClass("graph").css("width","900px").css("height","240px");
     
     graphs[key] = new GraphEntry(val.views,key);
     
