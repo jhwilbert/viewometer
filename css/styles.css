@@ -11,7 +11,7 @@ body {
 
 .graph {
     float:left;
-    background:black;
+    border:1px solid black;
 }
 
 button {

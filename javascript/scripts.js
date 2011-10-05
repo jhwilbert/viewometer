@@ -4,6 +4,7 @@ url = "http://localhost:8082/output/display_videos"
 
 /* Arrays */
 videos = []
+graphs = []
 
 $(document).ready(function(){
 	
@@ -22,6 +23,36 @@ $(document).ready(function(){
     
 });
 
+
+function parseDate(string) {
+    return string
+}
+
+function GraphEntry(views,key) {
+    var graphdata = []
+    
+    $.each(views, function(index,value) {
+        
+        points = new Array(2);        
+        points[0] = parseDate(index);
+        points[1] = parseInt(value);
+        
+        graphdata.push(points);
+        
+    });
+    
+    console.log(graphdata);
+
+    var d2 = [[1, 7], [1, 8], [3, 5]];
+
+    console.log(d2);
+    
+    $(function () {
+        $.plot($("#graph_"+key), [d2]);
+    });       
+}
+
+// Creates Video Entry
 
 function VideoEntry(key,val) {
     
@@ -42,17 +73,13 @@ function VideoEntry(key,val) {
            
     $(document.createElement("div")).attr("id","graph_"+key).appendTo("#video_"+key).addClass("graph").css("width","500px").css("height","200px");
     
-    var d2 = [[4, 7], [12, 8], [3, 5]];
+    graphs[key] = new GraphEntry(val.views,key);
     
-    $(function () {
-        //$.plot($("#graph"+key), [d2]);
-    });   
     // console.debug(val.info['url'])
     // console.debug(val.info['date_published'])
     // console.debug(val.info['title'])
     // console.debug(val.info['thumbs'])
-
-     console.debug(val.views);
+    // console.debug(val.views);
     // console.debug(val.tags);
     
 }

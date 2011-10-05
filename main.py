@@ -288,7 +288,7 @@ class ScrapeViews(webapp.RequestHandler):
 
            # add new key pair to dictionary
            viewsEntries = eval(video_o.views)
-           viewsEntries[nowstr] = { 'views': self.getEntryData(video.token) }
+           viewsEntries[nowstr] = self.getEntryData(video.token)
 
            video_o.views = simplejson.dumps(viewsEntries)
            video_o.checkMeFlag = False
