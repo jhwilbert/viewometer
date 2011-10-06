@@ -39,7 +39,6 @@ import time
 from urllib2 import HTTPError
 
 # Models
-from models import VideoData
 
 # Constants
 DATE_STRING_FORMAT = "%Y-%m-%dT%H:%M"
@@ -131,6 +130,7 @@ class SelectBatch(webapp.RequestHandler):
             
 class ScrapePage(webapp.RequestHandler):
      def get(self):
+          from models import VideoData, VideoSearchIndex, SearchData
           """
           Resource retrieves 20 most recent videos of You Tube given a search term. It retrieves them and stores in a datastore object
           using Mechanize and Beautiful soup.
@@ -141,6 +141,21 @@ class ScrapePage(webapp.RequestHandler):
           
           """
           search_term = self.request.get("search")
+          
+          logging.info("Executing")
+          
+          existing_search_query = db.GqlQuery("SELECT __key__ FROM SearchData WHERE queryText = :1", search_term)
+          existing_search = existing_search_query.get()
+          if existing_search is None:
+              logging.info("No existing search_term matches: %s", search_term)
+              new_search = SearchData()
+              new_search.queryText = search_term
+              new_search.put()
+              search_query_key = new_search.key()
+          else:
+              logging.info("Found existing search_term: %s", existing_search)
+              search_query_key = existing_search
+          
           
           br = gaemechanize.Browser()
           
@@ -184,21 +199,30 @@ class ScrapePage(webapp.RequestHandler):
           search_results = soup.findAll('div', attrs = {'class': "result-item *sr "})
           
           # Store in DB
-          dataModelRetrieve = VideoData()   
+          new_video = VideoData()   
+          
           
           for result in search_results:
-
-              vidtoken =  self.scrapeVideoInfo(result)['url'][31:42] # strip youtube url
-              dataModelStore = VideoData(key_name=vidtoken)
-              dataModelStore.token = vidtoken
               
-              dataModelStore.json = simplejson.dumps(self.scrapeVideoInfo(result))
-              dataModelStore.views = simplejson.dumps(self.scrapeVideoViews(result))
+              # strip token from youtube url
+              vidtoken =  self.scrapeVideoInfo(result)['url'][31:42] 
               
-              dataModelStore.associatedSearch = search_term.split(" ") 
-              dataModelStore.alertLevel = "initial"
-              dataModelStore.checkMeFlag = False
-              dataModelStore.put()
+              # Create a new VideoData object with the video token
+              new_video = VideoData(key_name=vidtoken)
+              
+              # If it doesn't exist already. 
+              #if VideoData.get(new_video.key()) is None:
+              new_video.token = vidtoken
+              new_video.json = simplejson.dumps(self.scrapeVideoInfo(result))
+              new_video.views = simplejson.dumps(self.scrapeVideoViews(result))
+              
+              new_video_searchlist = VideoSearchIndex(parent=new_video)    
+              new_video_searchlist.searchTerms.append(search_query_key)
+              new_video_searchlist.put()
+                            
+              new_video.alertLevel = "initial"
+              new_video.checkMeFlag = False
+              new_video.put()
  
               #print ''                           
               #print self.scrapeVideoInfo(result)
@@ -333,6 +357,14 @@ class ScrapeViews(webapp.RequestHandler):
          else:
              views = "0"
          return views           
+
+class DeleteData(webapp.RequestHandler):
+    def get(self):
+         """ 
+         Delete Data from datastore. Uncomment before use. Recomment after. 
+         """
+         from models import VideoData
+         db.delete(VideoData.all()) #### DELETE ALL ENTRIES
                                   
 ############################################ Handlers  ###################################################
 
@@ -340,6 +372,7 @@ def main():
     application = webapp.WSGIApplication([('/tasks/select_batch', SelectBatch),
                                           ('/tasks/scrape_page', ScrapePage),
                                           ('/tasks/scrape_views', ScrapeViews),
+                                          ('/tasks/delete_datastore', DeleteData),
                                           ('/', MainHandler),
                                           ('/output/display_videos', DisplayVideos)],
                                          debug=True)
