@@ -36,9 +36,10 @@ input {
 }
 
 .video {
-    padding:20px;
+    padding:15px;
     float:left;
     height:400px;
+    margin-top:15px;
     background-color:#ededed;
-    margin: 10px;
+
 }

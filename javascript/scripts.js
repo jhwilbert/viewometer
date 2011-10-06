@@ -1,6 +1,7 @@
 /* Variables */
 
-url = "http://localhost:8082/output/display_videos"
+urlLocal = "http://localhost:8082/output/display_videos"
+urlRemote = "http://viewometer.appspot.com/output/display_videos"
 
 /* Arrays */
 videos = []
@@ -8,7 +9,7 @@ graphs = []
 
 $(document).ready(function(){
 	
-    $.getJSON(url, function(data) {		
+    $.getJSON(urlLocal, function(data) {		
     	$.each(data, function(key, val) {
             
             videos[key] = new VideoEntry(key,val)
@@ -56,6 +57,7 @@ function GraphEntry(views,key) {
     
     var d2 = graphdata
     
+    console.log(graphdata)
     var options = {
       xaxis: {
           mode: "time",
