@@ -42,7 +42,7 @@ from urllib2 import HTTPError
 
 # Constants
 DATE_STRING_FORMAT = "%Y-%m-%dT%H:%M"
-TEN_MINUTES = datetime.timedelta(minutes=10)
+TEN_MINUTES = datetime.timedelta(minutes=1)
 THIRTY_MINUTES = datetime.timedelta(minutes=30)
 ONE_HOUR = datetime.timedelta(hours=1)
 HALF_DAY = datetime.timedelta(hours=12)
@@ -90,8 +90,10 @@ class DisplayVideos(webapp.RequestHandler):
             searchesIndex = VideoSearchIndex.get_by_key_name(video.token, parent=video)
             
             # Create a list of searches that found this video
+
+            videoSearches = []
+
             if searchesIndex:
-                videoSearches = []
                 for key in searchesIndex.searchTerms:
                     videoSearches.append(db.get(key).queryText)
             
