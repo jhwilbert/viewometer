@@ -313,34 +313,26 @@ class ScrapePage(webapp.RequestHandler):
 
 class ScrapeViews(webapp.RequestHandler):
     def get(self):
+        from models import VideoData, VideoViewsData
         """ 
         Selects videos from database and tracks their views over time
         """
+        
         # get current datetime
         now = datetime.datetime.now()
-        nowstr = now.strftime(DATE_STRING_FORMAT) # youtube consistent date format
         
-                   
-        query = VideoData.gql("WHERE checkMeFlag = False") # CHANGE THIS BACK TO TRUE WHEN DEPLOYING
-        logging.info('Checking %i videos', query.count()) 
+        # query db for videos which have been flagged                   
+        videos_to_check = VideoData.gql("WHERE checkMeFlag = True") # CHANGE THIS BACK TO TRUE WHEN DEPLOYING
+        
+        logging.info('Checking %i videos', videos_to_check.count()) 
                
-        for video in query:
-           #print self.getEntryData(video.token)
-
-           # get id
-           video_k = db.Key.from_path("VideoData", video.token)
-           video_o = db.get(video_k)
-
-           # add new key pair to dictionary
-           viewsEntries = eval(video_o.views)
-           viewsEntries[nowstr] = self.getEntryData(video.token)
-
-           video_o.views = simplejson.dumps(viewsEntries)
-           video_o.checkMeFlag = False
-           video_o.put()
-           #video_o.delete()
-
-           #self.getEntryData(video.token)
+        for video in videos_to_check:
+            
+            new_views_data = VideoViewsData(video=video, dateTime=now, views=self.getEntryData(video.token), collection_name="views")
+            new_views_data.put()
+            
+            video.checkMeFlag = False
+            video.put()
            
     def getEntryData(self,entry_id):
          """ 
@@ -374,9 +366,9 @@ class ScrapeViews(webapp.RequestHandler):
            view_count = str(tabs.contents[1]).lstrip('<strong>')[0:-9].replace(",", "") # this is a hack
          
          if(view_count):
-             views = view_count
+             views = int(view_count)
          else:
-             views = "0"
+             views = 0
          return views           
 
                                   
