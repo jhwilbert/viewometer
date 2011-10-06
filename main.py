@@ -221,8 +221,7 @@ class ScrapePage(webapp.RequestHandler):
           
           # Store in DB
           new_video = VideoData()   
-          
-          
+                   
           for result in search_results:
               
               # strip token from youtube url
@@ -248,8 +247,8 @@ class ScrapePage(webapp.RequestHandler):
               new_video.checkMeFlag = False
               new_video.put()
                     
-          path = os.path.join(os.path.dirname(__file__), 'index.html')
-          self.response.out.write(template.render(path, {}))
+          #path = os.path.join(os.path.dirname(__file__), '/')
+          #self.response.out.write(template.render(path, {}))
 
      def scrapeVideoInfo(self,result):
          """ All videos entries are within a href tag, so we have to go through each link 
@@ -325,7 +324,7 @@ class ScrapeViews(webapp.RequestHandler):
         now = datetime.datetime.now()
         
         # query db for videos which have been flagged                   
-        videos_to_check = VideoData.gql("WHERE checkMeFlag = True") # CHANGE THIS BACK TO TRUE WHEN DEPLOYING
+        videos_to_check = VideoData.gql("WHERE checkMeFlag = False") # CHANGE THIS BACK TO TRUE WHEN DEPLOYING
         
         logging.info('Checking %i videos', videos_to_check.count()) 
                

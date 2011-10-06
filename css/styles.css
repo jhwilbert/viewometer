@@ -43,3 +43,27 @@ input {
     background-color:#ededed;
 
 }
+
+/* Video Styles */
+
+.thumb {
+    float:left;
+    width:200px;
+    height:150px;
+    margin:15px;
+}
+
+.title {
+    margin:10px;
+    font-size:18px;
+    font-weight:bold;
+}
+
+.published {
+    float:left;
+    font-size:12px;
+}
+
+.link {
+    float:left;
+}
