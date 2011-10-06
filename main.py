@@ -134,8 +134,10 @@ class DisplayVideos(webapp.RequestHandler):
             searchesIndex = VideoSearchIndex.get_by_key_name(video.token, parent=video)
             
             # Create a list of searches that found this video
+
+            videoSearches = []
+
             if searchesIndex:
-                videoSearches = []
                 for key in searchesIndex.searchTerms:
                     videoSearches.append(db.get(key).queryText)
             
@@ -336,6 +338,7 @@ class ScrapePage(webapp.RequestHandler):
         # get current datetime
         now = datetime.datetime.now()
         dateList = date.split(" ")
+        #upload_time = 0;
         
         #update current time with when the video was uploaded        
         if dateList[1] == "minutes" or dateList[1] == "minute":

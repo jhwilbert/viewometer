@@ -1,6 +1,7 @@
 /* Variables */
 
-url = "http://localhost:8082/output/display_videos"
+urlLocal = "http://localhost:8082/output/display_videos"
+urlRemote = "http://viewometer.appspot.com/output/display_videos"
 
 /* Arrays */
 videos = []
@@ -8,7 +9,7 @@ graphs = []
 
 $(document).ready(function(){
 	
-    $.getJSON(url, function(data) {		
+    $.getJSON(urlLocal, function(data) {		
     	$.each(data, function(key, val) {
             
             videos[key] = new VideoEntry(key,val)
@@ -32,7 +33,7 @@ function parseDate(string) {
     stringTime = stringTime.split(":")
     stringDate = stringDate.split("-")
     
-  
+      
     return new Date(stringDate[0], stringDate[1], stringDate[2], stringTime[0], stringTime[1])
   }
 
@@ -43,39 +44,45 @@ function GraphEntry(views,key) {
     
     //console.debug(parseDate("2011-10-05T14:32"));
     
-    $.each(views, function(index,value) {
-        
+    console.log(views);
+         
+     $.each(views, function(index,value) {
+           
+         $.each(value, function(index2,value2) {
+            
         points = new Array(2);        
-        points[0] = parseDate(index).getTime();
-        points[1] = parseInt(value);
+        points[0] = parseDate(index2).getTime();
+        points[1] = parseInt(value2);
         
         graphdata.push(points);
-    });
+        });
+     });
     
-    console.debug(graphdata)
-    
-    var d2 = graphdata
-    
-    var options = {
-      xaxis: {
-          mode: "time",
-          timeformat: "%b %d <br> %H:%M",          
-          //minTickSize: [1, "day"]
-      },
-      yaxis: {
-         min: 0,
-         // max:10
-      }
-    }
-    
+     console.debug(graphdata)
+     
+     var d2 = graphdata
+     
+     console.log(graphdata)
+     var options = {
+       xaxis: {
+           mode: "time",
+           timeformat: "%b %d <br> %H:%M",          
+           //minTickSize: [1, "day"]
+       },
+       yaxis: {
+          min: 0,
+          // max:10
+       }
+     }
+     
 
-    
-    //console.log(d2);
-    
-    
-    $(function () {
-        $.plot($("#graph_"+key), [d2], options);
-    });       
+     
+     console.log(d2);
+     
+     
+     $(function () {
+         $.plot($("#graph_"+key), [d2], options);
+     });       
 }
 
 // Creates Video Entry
