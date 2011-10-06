@@ -372,7 +372,7 @@ class ScrapeViews(webapp.RequestHandler):
         now = datetime.datetime.now()
         
         # query db for videos which have been flagged                   
-        videos_to_check = VideoData.gql("WHERE checkMeFlag = False") # CHANGE THIS BACK TO TRUE WHEN DEPLOYING
+        videos_to_check = VideoData.gql("WHERE checkMeFlag = True") # CHANGE THIS BACK TO TRUE WHEN DEPLOYING
         
         logging.info('Checking %i videos', videos_to_check.count()) 
                
