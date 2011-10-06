@@ -1,34 +1,40 @@
 /* Variables */
-urlLocal = "http://localhost:8082/output/display_videos"
+urlLocal = "http://localhost:8080/output/display_videos"
 urlRemote = "http://viewometer.appspot.com/output/display_videos"
 
 /* Arrays */
 videos = []
 graphs = []
 allVideos = []
-
+allLabels = []
 
 $(document).ready(function(){
     
-    $(document.createElement("div")).attr("id","allgraphs").appendTo("#container").css("width","900px").css("height","240px");
+    $(document.createElement("div")).attr("id","allgraphs").appendTo("#container").css("width","960px").css("height","840px");
     
     
     $.getJSON(urlLocal, function(data) {
     	$.each(data, function(key, val) {
             videos[key] = new VideoEntry(key,val);
     	});
-        
-        
-        var options = {
-          xaxis: {
-              mode: "time",
-              timeformat: "%b %d <br> %H:%M",
-          }
-        }
-            	
-    	$.plot($("#allgraphs"), allVideos,options );
-    });
 
+
+    var plot = $.plot($("#allgraphs"), arrObj, {
+               series: {
+                   lines: { show: true }, points: { show: true } },
+               		grid: { hoverable: true, clickable: true },
+        	   	   xaxis: { mode: "time", timeformat: "%b %d <br> %H:%M",
+         		}
+    	});
+    	
+    	var legend0 = $(".legend").children()[0];
+    	var legend1 = $(".legend").children()[1];
+		legend0.style.width = "150px";
+		legend1.style.width = "150px";
+   });
+   
+   
+    
 });
 
 /* Creates Video Entry */
@@ -52,21 +58,24 @@ function VideoEntry(key,val) {
            
     $(document.createElement("div")).attr("id","graph_"+key).appendTo("#video_"+key).addClass("graph").css("width","900px").css("height","240px");
     
-    graphs[key] = new GraphEntry(val.data,key);
+    graphs[key] = new GraphEntry(val.data,key,val.info['title']);
 
 
 
 }
 
+arrObj = [];
+
 /* Creates Graph For Video Entry */
 
-function GraphEntry(views,key) { 
+function GraphEntry(views,key,label) { 
     var graphdata = []
+
  
-    console.debug(views)
      $.each(views, function(index,value) {         
 
-                  points = new Array(2);        
+                  points = new Array(2); 
+                  //label = "title"+index;
                   points[0] = parseDate(value.datetime).getTime();
                   points[1] = parseInt(value.views);      
                   graphdata.push(points);
@@ -80,11 +89,19 @@ function GraphEntry(views,key) {
        }
      }
      
+
+               
      $(function () {
          $.plot($("#graph_"+key), [graphdata], options);
      });
      
+     allLabels.push(label);
      allVideos.push(graphdata);
+     
+     object = { data: graphdata, label: label}
+     
+     arrObj.push(object);
+   	
 }
 
 
