@@ -14,3 +14,9 @@ indexes:
   properties:
   - name: video
   - name: dateTime
+
+- kind: VideoViewsData
+  properties:
+  - name: video
+  - name: dateTime
+    direction: desc

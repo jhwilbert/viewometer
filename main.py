@@ -112,6 +112,8 @@ class DisplayVideos(webapp.RequestHandler):
         
 class SelectBatch(webapp.RequestHandler):
     def get(self):
+        from models import VideoData, VideoViewsData
+        
         """
         Selects the videos from the database that are due a check. This is based on the amount of time since they were last checked and on their alert level.
         """
@@ -123,29 +125,24 @@ class SelectBatch(webapp.RequestHandler):
         count = 0
         
         for video in queryModel:
-            # get id
-            video_k = db.Key.from_path("VideoData", video.token)
-            video_o = db.get(video_k)
-               
-            # get the list of views entries
-            viewsEntries = eval(video_o.views)#sorted(, key='time', reverse=True)
             
-            # find the time of the last check, should be first in the list
-            lastCheckDict = viewsEntries[len(viewsEntries) -1]
-            #logging.info('last check: %s', lastCheckStr)
+            # get all the views info for that video
+            video_views_data = video.views.order("-dateTime")
             
-            # convert to datetime object for easier comparison
-            lastCheck = datetime.datetime.strptime(lastCheckDict['time'], DATE_STRING_FORMAT)
-            timeElapsed = now - lastCheck
+            # get the last one
+            latest_views_data = video_views_data.get()
+            
+            #compare the times
+            timeElapsed = now - latest_views_data.dateTime
             
             # if the amount of time passed since last check exceeds the alertLevel for this video
-            if (timeElapsed > ALERT_LEVELS[video_o.alertLevel]): 
-                video_o.checkMeFlag = True
+            if (timeElapsed > ALERT_LEVELS[video.alertLevel]): 
+                video.checkMeFlag = True
                 count += 1
             else:
-                video_o.checkMeFlag = False
+                video.checkMeFlag = False
             
-            video_o.put()
+            video.put()
         
         logging.info('Selected %i videos for checking', count)    
     
