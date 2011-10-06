@@ -39,7 +39,6 @@ import time
 from urllib2 import HTTPError
 
 # Models
-from models import VideoData
 
 # Constants
 DATE_STRING_FORMAT = "%Y-%m-%dT%H:%M"
@@ -64,6 +63,8 @@ class MainHandler(webapp.RequestHandler):
         
 class DisplayVideos(webapp.RequestHandler): 
     def get(self):
+        from models import VideoData, VideoSearchIndex, SearchData, VideoViewsData
+        
         """ 
         Displays all videos.        
         """
@@ -72,16 +73,36 @@ class DisplayVideos(webapp.RequestHandler):
         dataModelRetrieve = VideoData()  
         
         counter = 0
-        for video in dataModelRetrieve.all():
-           #print ''
-           counter = counter+1
-           
-           # turn them into dictionaries
-           videoInfo = eval(video.json)
-           videoViews = eval(video.views)
-           #videoTags = eval(video.associatedSearch)
-           videoAll[counter] = { "info" : videoInfo, "views" : videoViews, "tags" : video.associatedSearch}
         
+        # for each video
+        for video in dataModelRetrieve.all():
+            
+            
+            
+            # Create a list of date-stamped views records for each video
+            viewsData = []
+            viewsQuery = video.views.order('dateTime')
+            for record in viewsQuery:
+                viewDict = {record.dateTime.strftime(DATE_STRING_FORMAT): record.views}
+                viewsData.append(viewDict)
+            
+            # get the searches index for the video
+            searchesIndex = VideoSearchIndex.get_by_key_name(video.token, parent=video)
+            
+            # Create a list of searches that found this video
+            if searchesIndex:
+                videoSearches = []
+                for key in searchesIndex.searchTerms:
+                    videoSearches.append(db.get(key).queryText)
+            
+            # turn info into dictionary
+            videoInfo = eval(video.json)
+            
+            # iterate and create big dictionary
+            videoAll[counter] = { "info" : videoInfo, "views" : viewsData, "tags" : videoSearches}
+            counter = counter+1
+                    
+        # parse dictionary into json
         result = simplejson.dumps(videoAll)
         
         self.response.headers['Content-Type'] = 'application/json'
@@ -91,6 +112,8 @@ class DisplayVideos(webapp.RequestHandler):
         
 class SelectBatch(webapp.RequestHandler):
     def get(self):
+        from models import VideoData, VideoViewsData
+        
         """
         Selects the videos from the database that are due a check. This is based on the amount of time since they were last checked and on their alert level.
         """
@@ -102,35 +125,31 @@ class SelectBatch(webapp.RequestHandler):
         count = 0
         
         for video in queryModel:
-            # get id
-            video_k = db.Key.from_path("VideoData", video.token)
-            video_o = db.get(video_k)
-               
-            # get the list of views entries
-            viewsEntries = eval(video_o.views)#sorted(, key='time', reverse=True)
             
-            # find the time of the last check, should be first in the list
-            lastCheckDict = viewsEntries[len(viewsEntries) -1]
-            #logging.info('last check: %s', lastCheckStr)
+            # get all the views info for that video
+            video_views_data = video.views.order("-dateTime")
             
-            # convert to datetime object for easier comparison
-            lastCheck = datetime.datetime.strptime(lastCheckDict['time'], DATE_STRING_FORMAT)
-            timeElapsed = now - lastCheck
+            # get the last one
+            latest_views_data = video_views_data.get()
+            
+            #compare the times
+            timeElapsed = now - latest_views_data.dateTime
             
             # if the amount of time passed since last check exceeds the alertLevel for this video
-            if (timeElapsed > ALERT_LEVELS[video_o.alertLevel]): 
-                video_o.checkMeFlag = True
+            if (timeElapsed > ALERT_LEVELS[video.alertLevel]): 
+                video.checkMeFlag = True
                 count += 1
             else:
-                video_o.checkMeFlag = False
+                video.checkMeFlag = False
             
-            video_o.put()
+            video.put()
         
         logging.info('Selected %i videos for checking', count)    
     
             
 class ScrapePage(webapp.RequestHandler):
      def get(self):
+          from models import VideoData, VideoSearchIndex, SearchData, VideoViewsData
           """
           Resource retrieves 20 most recent videos of You Tube given a search term. It retrieves them and stores in a datastore object
           using Mechanize and Beautiful soup.
@@ -141,6 +160,21 @@ class ScrapePage(webapp.RequestHandler):
           
           """
           search_term = self.request.get("search")
+          
+          logging.info("Executing")
+          
+          existing_search_query = db.GqlQuery("SELECT __key__ FROM SearchData WHERE queryText = :1", search_term)
+          existing_search = existing_search_query.get()
+          if existing_search is None:
+              logging.info("No existing search_term matches: %s", search_term)
+              new_search = SearchData()
+              new_search.queryText = search_term
+              new_search.put()
+              search_query_key = new_search.key()
+          else:
+              logging.info("Found existing search_term: %s", existing_search)
+              search_query_key = existing_search
+          
           
           br = gaemechanize.Browser()
           
@@ -184,25 +218,33 @@ class ScrapePage(webapp.RequestHandler):
           search_results = soup.findAll('div', attrs = {'class': "result-item *sr "})
           
           # Store in DB
-          dataModelRetrieve = VideoData()   
+          new_video = VideoData()   
+          
           
           for result in search_results:
-
-              vidtoken =  self.scrapeVideoInfo(result)['url'][31:42] # strip youtube url
-              dataModelStore = VideoData(key_name=vidtoken)
-              dataModelStore.token = vidtoken
               
-              dataModelStore.json = simplejson.dumps(self.scrapeVideoInfo(result))
-              dataModelStore.views = simplejson.dumps(self.scrapeVideoViews(result))
+              # strip token from youtube url
+              vidtoken =  self.scrapeVideoInfo(result)['url'][31:42] 
               
-              dataModelStore.associatedSearch = search_term.split(" ") 
-              dataModelStore.alertLevel = "initial"
-              dataModelStore.checkMeFlag = False
-              dataModelStore.put()
- 
-              #print ''                           
-              #print self.scrapeVideoInfo(result)
-              #print self.scrapeVideoViews(result)
+              # Create a new VideoData object with the video token
+              new_video = VideoData(key_name=vidtoken)
+              
+              # If it doesn't exist already. TODO
+              #if VideoData.get(new_video.key()) is None:
+              new_video.token = vidtoken
+              new_video.json = simplejson.dumps(self.scrapeVideoInfo(result))
+              
+              viewsDate, views = self.scrapeVideoViews(result)
+              views_object = VideoViewsData(dateTime=viewsDate, views=views, video=new_video)
+              views_object.put()
+              
+              new_video_searchlist = VideoSearchIndex(key_name=new_video.token, parent=new_video)    
+              new_video_searchlist.searchTerms.append(search_query_key)
+              new_video_searchlist.put()
+                            
+              new_video.alertLevel = "initial"
+              new_video.checkMeFlag = False
+              new_video.put()
                     
           path = os.path.join(os.path.dirname(__file__), 'index.html')
           self.response.out.write(template.render(path, {}))
@@ -231,6 +273,8 @@ class ScrapePage(webapp.RequestHandler):
         
          date_published_str = self.formatDate(date_published).strftime(DATE_STRING_FORMAT)
          
+         
+         ############# TODO ################
          video = { "title" : title, "date_published" : date_published_str, "url" : "http://www.youtube.com" + url, "thumbs" : thumb_url}
          
          return video
@@ -260,43 +304,36 @@ class ScrapePage(webapp.RequestHandler):
 
         # get current datetime
         now = datetime.datetime.now()
-        nowstr = now.strftime(DATE_STRING_FORMAT)
+        #nowstr = now.strftime(DATE_STRING_FORMAT)
          
         viewcount = result.find('span', attrs = {'class' : 'viewcount'}).find(text=True)
-        viewsdict[nowstr] = viewcount[0:-6]                             
+        
+        views = int(viewcount[0:-6])
 
-        return viewsdict
+        return now, views
 
 class ScrapeViews(webapp.RequestHandler):
     def get(self):
+        from models import VideoData, VideoViewsData
         """ 
         Selects videos from database and tracks their views over time
         """
+        
         # get current datetime
         now = datetime.datetime.now()
-        nowstr = now.strftime(DATE_STRING_FORMAT) # youtube consistent date format
         
-                   
-        query = VideoData.gql("WHERE checkMeFlag = False") # CHANGE THIS BACK TO TRUE WHEN DEPLOYING
-        logging.info('Checking %i videos', query.count()) 
+        # query db for videos which have been flagged                   
+        videos_to_check = VideoData.gql("WHERE checkMeFlag = True") # CHANGE THIS BACK TO TRUE WHEN DEPLOYING
+        
+        logging.info('Checking %i videos', videos_to_check.count()) 
                
-        for video in query:
-           #print self.getEntryData(video.token)
-
-           # get id
-           video_k = db.Key.from_path("VideoData", video.token)
-           video_o = db.get(video_k)
-
-           # add new key pair to dictionary
-           viewsEntries = eval(video_o.views)
-           viewsEntries[nowstr] = self.getEntryData(video.token)
-
-           video_o.views = simplejson.dumps(viewsEntries)
-           video_o.checkMeFlag = False
-           video_o.put()
-           #video_o.delete()
-
-           #self.getEntryData(video.token)
+        for video in videos_to_check:
+            
+            new_views_data = VideoViewsData(video=video, dateTime=now, views=self.getEntryData(video.token), collection_name="views")
+            new_views_data.put()
+            
+            video.checkMeFlag = False
+            video.put()
            
     def getEntryData(self,entry_id):
          """ 
@@ -330,10 +367,11 @@ class ScrapeViews(webapp.RequestHandler):
            view_count = str(tabs.contents[1]).lstrip('<strong>')[0:-9].replace(",", "") # this is a hack
          
          if(view_count):
-             views = view_count
+             views = int(view_count)
          else:
-             views = "0"
+             views = 0
          return views           
+
                                   
 ############################################ Handlers  ###################################################
 
