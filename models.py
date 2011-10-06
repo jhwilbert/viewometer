@@ -9,10 +9,14 @@ class SearchData(db.Model):
 
 class VideoData(db.Model):
     json                = db.TextProperty()
-    views               = db.TextProperty()
     token               = db.StringProperty()
     alertLevel	    	= db.StringProperty()
     checkMeFlag         = db.BooleanProperty()
+    
+class VideoViewsData(db.Model):
+    video               = db.ReferenceProperty(VideoData, collection_name="views")
+    dateTime            = db.DateTimeProperty()
+    views               = db.IntegerProperty()
 
 class VideoSearchIndex(db.Model):
     searchTerms         = db.ListProperty(db.Key)

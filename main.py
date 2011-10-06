@@ -63,6 +63,8 @@ class MainHandler(webapp.RequestHandler):
         
 class DisplayVideos(webapp.RequestHandler): 
     def get(self):
+        from models import VideoData, VideoSearchIndex, SearchData, VideoViewsData
+        
         """ 
         Displays all videos.        
         """
@@ -71,16 +73,36 @@ class DisplayVideos(webapp.RequestHandler):
         dataModelRetrieve = VideoData()  
         
         counter = 0
-        for video in dataModelRetrieve.all():
-           #print ''
-           counter = counter+1
-           
-           # turn them into dictionaries
-           videoInfo = eval(video.json)
-           videoViews = eval(video.views)
-           #videoTags = eval(video.associatedSearch)
-           videoAll[counter] = { "info" : videoInfo, "views" : videoViews, "tags" : video.associatedSearch}
         
+        # for each video
+        for video in dataModelRetrieve.all():
+            
+            
+            
+            # Create a list of date-stamped views records for each video
+            viewsData = []
+            viewsQuery = video.views.order('dateTime')
+            for record in viewsQuery:
+                viewDict = {record.dateTime.strftime(DATE_STRING_FORMAT): record.views}
+                viewsData.append(viewDict)
+            
+            # get the searches index for the video
+            searchesIndex = VideoSearchIndex.get_by_key_name(video.token, parent=video)
+            
+            # Create a list of searches that found this video
+            if searchesIndex:
+                videoSearches = []
+                for key in searchesIndex.searchTerms:
+                    videoSearches.append(db.get(key).queryText)
+            
+            # turn info into dictionary
+            videoInfo = eval(video.json)
+            
+            # iterate and create big dictionary
+            videoAll[counter] = { "info" : videoInfo, "views" : viewsData, "tags" : videoSearches}
+            counter = counter+1
+                    
+        # parse dictionary into json
         result = simplejson.dumps(videoAll)
         
         self.response.headers['Content-Type'] = 'application/json'
@@ -130,7 +152,7 @@ class SelectBatch(webapp.RequestHandler):
             
 class ScrapePage(webapp.RequestHandler):
      def get(self):
-          from models import VideoData, VideoSearchIndex, SearchData
+          from models import VideoData, VideoSearchIndex, SearchData, VideoViewsData
           """
           Resource retrieves 20 most recent videos of You Tube given a search term. It retrieves them and stores in a datastore object
           using Mechanize and Beautiful soup.
@@ -210,23 +232,22 @@ class ScrapePage(webapp.RequestHandler):
               # Create a new VideoData object with the video token
               new_video = VideoData(key_name=vidtoken)
               
-              # If it doesn't exist already. 
+              # If it doesn't exist already. TODO
               #if VideoData.get(new_video.key()) is None:
               new_video.token = vidtoken
               new_video.json = simplejson.dumps(self.scrapeVideoInfo(result))
-              new_video.views = simplejson.dumps(self.scrapeVideoViews(result))
               
-              new_video_searchlist = VideoSearchIndex(parent=new_video)    
+              viewsDate, views = self.scrapeVideoViews(result)
+              views_object = VideoViewsData(dateTime=viewsDate, views=views, video=new_video)
+              views_object.put()
+              
+              new_video_searchlist = VideoSearchIndex(key_name=new_video.token, parent=new_video)    
               new_video_searchlist.searchTerms.append(search_query_key)
               new_video_searchlist.put()
                             
               new_video.alertLevel = "initial"
               new_video.checkMeFlag = False
               new_video.put()
- 
-              #print ''                           
-              #print self.scrapeVideoInfo(result)
-              #print self.scrapeVideoViews(result)
                     
           path = os.path.join(os.path.dirname(__file__), 'index.html')
           self.response.out.write(template.render(path, {}))
@@ -255,6 +276,8 @@ class ScrapePage(webapp.RequestHandler):
         
          date_published_str = self.formatDate(date_published).strftime(DATE_STRING_FORMAT)
          
+         
+         ############# TODO ################
          video = { "title" : title, "date_published" : date_published_str, "url" : "http://www.youtube.com" + url, "thumbs" : thumb_url}
          
          return video
@@ -283,12 +306,13 @@ class ScrapePage(webapp.RequestHandler):
 
         # get current datetime
         now = datetime.datetime.now()
-        nowstr = now.strftime(DATE_STRING_FORMAT)
+        #nowstr = now.strftime(DATE_STRING_FORMAT)
          
         viewcount = result.find('span', attrs = {'class' : 'viewcount'}).find(text=True)
-        viewsdict[nowstr] = viewcount[0:-6]                             
+        
+        views = int(viewcount[0:-6])
 
-        return viewsdict
+        return now, views
 
 class ScrapeViews(webapp.RequestHandler):
     def get(self):
@@ -358,13 +382,6 @@ class ScrapeViews(webapp.RequestHandler):
              views = "0"
          return views           
 
-class DeleteData(webapp.RequestHandler):
-    def get(self):
-         """ 
-         Delete Data from datastore. Uncomment before use. Recomment after. 
-         """
-         from models import VideoData
-         db.delete(VideoData.all()) #### DELETE ALL ENTRIES
                                   
 ############################################ Handlers  ###################################################
 
@@ -372,7 +389,6 @@ def main():
     application = webapp.WSGIApplication([('/tasks/select_batch', SelectBatch),
                                           ('/tasks/scrape_page', ScrapePage),
                                           ('/tasks/scrape_views', ScrapeViews),
-                                          ('/tasks/delete_datastore', DeleteData),
                                           ('/', MainHandler),
                                           ('/output/display_videos', DisplayVideos)],
                                          debug=True)
