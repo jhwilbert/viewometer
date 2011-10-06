@@ -4,6 +4,7 @@ url = "http://localhost:8082/output/display_videos"
 
 /* Arrays */
 videos = []
+graphs = []
 
 $(document).ready(function(){
 	
@@ -23,6 +24,62 @@ $(document).ready(function(){
 });
 
 
+function parseDate(string) {
+    string = string.split("T")
+    stringTime = string[1]
+    stringDate = string[0]
+    
+    stringTime = stringTime.split(":")
+    stringDate = stringDate.split("-")
+    
+  
+    return new Date(stringDate[0], stringDate[1], stringDate[2], stringTime[0], stringTime[1])
+  }
+
+function GraphEntry(views,key) {
+    
+    
+    var graphdata = []
+    
+    //console.debug(parseDate("2011-10-05T14:32"));
+    
+    $.each(views, function(index,value) {
+        
+        points = new Array(2);        
+        points[0] = parseDate(index).getTime();
+        points[1] = parseInt(value);
+        
+        graphdata.push(points);
+    });
+    
+    console.debug(graphdata)
+    
+    var d2 = graphdata
+    
+    var options = {
+      xaxis: {
+          mode: "time",
+          timeformat: "%b %d <br> %H:%M",          
+          //minTickSize: [1, "day"]
+      },
+      yaxis: {
+         min: 0,
+         // max:10
+      }
+    }
+    
+
+    
+    //console.log(d2);
+    
+    
+    $(function () {
+        $.plot($("#graph_"+key), [d2], options);
+    });       
+}
+
+// Creates Video Entry
+
 function VideoEntry(key,val) {
     
     // Create Video Elements (parent)
@@ -40,19 +97,15 @@ function VideoEntry(key,val) {
      // Create URL  (child)
     $(document.createElement("div")).attr("id","url_"+key).appendTo("#video_"+key).html(val.info['url']);
            
-    $(document.createElement("div")).attr("id","graph_"+key).appendTo("#video_"+key).addClass("graph").css("width","500px").css("height","200px");
+    $(document.createElement("div")).attr("id","graph_"+key).appendTo("#video_"+key).addClass("graph").css("width","900px").css("height","240px");
     
-    var d2 = [[4, 7], [12, 8], [3, 5]];
+    graphs[key] = new GraphEntry(val.views,key);
     
-    $(function () {
-        //$.plot($("#graph"+key), [d2]);
-    });   
     // console.debug(val.info['url'])
     // console.debug(val.info['date_published'])
     // console.debug(val.info['title'])
     // console.debug(val.info['thumbs'])
-
-     console.debug(val.views);
+    // console.debug(val.views);
     // console.debug(val.tags);
     
 }
