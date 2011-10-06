@@ -60,8 +60,11 @@ class MainHandler(webapp.RequestHandler):
         self.response.out.write(template.render(path, {}))
 
 ############################################ Display Mechanism ############################################   
-        
-class DisplayVideos(webapp.RequestHandler): 
+
+class DisplayVideos(webapp.RequestHandler):  
+    
+    from decimal import *
+       
     def get(self):
         from models import VideoData, VideoSearchIndex, SearchData, VideoViewsData
         
@@ -77,14 +80,55 @@ class DisplayVideos(webapp.RequestHandler):
         # for each video
         for video in dataModelRetrieve.all():
             
-            
+            logging.info("title %s", video.json)
             
             # Create a list of date-stamped views records for each video
-            viewsData = []
+            dataList = []
             viewsQuery = video.views.order('dateTime')
+            
+            i = 0
+            
             for record in viewsQuery:
-                viewDict = {record.dateTime.strftime(DATE_STRING_FORMAT): record.views}
-                viewsData.append(viewDict)
+                
+                viewsSpeed = 0.
+                viewsAcceleration = 0.
+                
+                # can't calculate speed/acceleration if there is only one entry
+                if i > 0:
+
+                    # get a timedelta object for how much time has passed
+                    timeDelta = record.dateTime - previousRecord.dateTime
+                    timeDeltaSeconds = float((timeDelta.microseconds + (timeDelta.seconds + timeDelta.days * 24 * 3600) * 10**6) / 10**6)
+                    logging.info("timeDeltaSeconds %i", timeDeltaSeconds)
+
+                    # get the change in the views
+                    viewsDelta = float(record.views - previousRecord.views)
+                    logging.info("viewsDelta %i", viewsDelta)
+
+                    # calculate the average speed since the last check in vps
+                    viewsSpeed = float(viewsDelta / timeDeltaSeconds) * 60 * 60
+                    logging.info("viewsSpeed %f", viewsSpeed)
+                                    
+                    # calculate the change in speed
+                    speedDelta = viewsSpeed - previousSpeed
+                    viewsAcceleration = speedDelta / timeDeltaSeconds * 60 * 60
+                    logging.info("viewsAcceleration %f", viewsAcceleration)
+                    
+                    
+                # We need to store the record for next time around
+                previousRecord = record
+                previousSpeed = viewsSpeed
+                
+                #getcontext().prec = 4 TODO
+                
+                # create a dictionary for each entry containing this data
+                dataDict = {"datetime": record.dateTime.strftime(DATE_STRING_FORMAT), "views": record.views, "speed": viewsSpeed, "acceleration": viewsAcceleration}
+                logging.info("dataDict %s", dataDict)
+                
+                # append this new dictionary to the list.
+                dataList.append(dataDict)
+                
+                i = i +1
             
             # get the searches index for the video
             searchesIndex = VideoSearchIndex.get_by_key_name(video.token, parent=video)
@@ -101,7 +145,7 @@ class DisplayVideos(webapp.RequestHandler):
             videoInfo = eval(video.json)
             
             # iterate and create big dictionary
-            videoAll[counter] = { "info" : videoInfo, "views" : viewsData, "tags" : videoSearches}
+            videoAll[counter] = { "info" : videoInfo, "data" : dataList, "tags" : videoSearches}
             counter = counter+1
                     
         # parse dictionary into json
@@ -147,7 +191,11 @@ class SelectBatch(webapp.RequestHandler):
             video.put()
         
         logging.info('Selected %i videos for checking', count)    
-    
+
+#class SearchRoutine(webapp.RequestHandler):
+#    def get(self):
+#        from models import SearchData
+        
             
 class ScrapePage(webapp.RequestHandler):
      def get(self):
@@ -329,8 +377,11 @@ class ScrapeViews(webapp.RequestHandler):
         logging.info('Checking %i videos', videos_to_check.count()) 
                
         for video in videos_to_check:
+                        
+            # get the current number of views
+            newViewsEntry = self.getEntryData(video.token)
             
-            new_views_data = VideoViewsData(video=video, dateTime=now, views=self.getEntryData(video.token), collection_name="views")
+            new_views_data = VideoViewsData(video=video, dateTime=now, views=newViewsEntry, collection_name="views")
             new_views_data.put()
             
             video.checkMeFlag = False
@@ -379,6 +430,7 @@ class ScrapeViews(webapp.RequestHandler):
 def main():
     application = webapp.WSGIApplication([('/tasks/select_batch', SelectBatch),
                                           ('/tasks/scrape_page', ScrapePage),
+                                          #('/tasks/search_routine', SearchRoutine),
                                           ('/tasks/scrape_views', ScrapeViews),
                                           ('/', MainHandler),
                                           ('/output/display_videos', DisplayVideos)],
