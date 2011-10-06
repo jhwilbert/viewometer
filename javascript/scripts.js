@@ -52,7 +52,8 @@ function VideoEntry(key,val) {
            
     $(document.createElement("div")).attr("id","graph_"+key).appendTo("#video_"+key).addClass("graph").css("width","900px").css("height","240px");
     
-    graphs[key] = new GraphEntry(val.views,key);
+    graphs[key] = new GraphEntry(val.data,key);
+
 
 
 }
@@ -62,15 +63,16 @@ function VideoEntry(key,val) {
 function GraphEntry(views,key) { 
     var graphdata = []
  
+    console.debug(views)
      $.each(views, function(index,value) {         
-         $.each(value, function(index2,value2) {          
-             points = new Array(2);        
-             points[0] = parseDate(index2).getTime();
-             points[1] = parseInt(value2);      
-             graphdata.push(points);
-        });
-     });
 
+                  points = new Array(2);        
+                  points[0] = parseDate(value.datetime).getTime();
+                  points[1] = parseInt(value.views);      
+                  graphdata.push(points);
+
+          });
+     
      var options = {
        xaxis: {
            mode: "time",
