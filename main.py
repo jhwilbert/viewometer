@@ -64,6 +64,8 @@ class MainHandler(webapp.RequestHandler):
 
 class SearchHandler(webapp.RequestHandler):
     def get(self):
+        
+        
         path = os.path.join(os.path.dirname(__file__), 'search.html')
         self.response.out.write(template.render(path, {}))
 
