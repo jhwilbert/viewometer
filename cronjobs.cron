@@ -1,2 +1,2 @@
 2 * * * * curl http://localhost:8082/tasks/select_batch
-20 * * * * curl http://localhost:8082/tasks/scrape_views
+5 * * * * curl http://localhost:8082/tasks/scrape_views

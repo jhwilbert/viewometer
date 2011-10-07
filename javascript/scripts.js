@@ -1,5 +1,5 @@
 /* Variables */
-urlLocal = "http://localhost:8080/output/display_videos"
+urlLocal = "http://localhost:8082/output/display_videos"
 urlRemote = "http://viewometer.appspot.com/output/display_videos"
 
 /* Arrays */
@@ -50,11 +50,11 @@ function VideoEntry(key,val) {
     // Create Title  (child)
     $(document.createElement("div")).attr("id","title_"+key).appendTo("#video_"+key).html(val.info['title']).addClass("title");
     
-     // Create Date  (child)
-    $(document.createElement("div")).attr("id","date_"+key).appendTo("#video_"+key).html("Published on:" + val.info['date_published']).addClass("published");
-    
      // Create URL  (child)
     $(document.createElement("div")).attr("id","url_"+key).appendTo("#video_"+key).html("<a href="+val.info['url']+">" + val.info['url']+"</a>").addClass("link");
+
+     // Create Date  (child)
+    $(document.createElement("div")).attr("id","date_"+key).appendTo("#video_"+key).html("Published on:" + val.info['date_published']).addClass("published");
            
     $(document.createElement("div")).attr("id","graph_"+key).appendTo("#video_"+key).addClass("graph").css("width","900px").css("height","240px");
     
