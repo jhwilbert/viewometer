@@ -184,10 +184,11 @@ class DisplayVideos(webapp.RequestHandler):
                     displayDictionary[search.queryText] =  videoList
                        
             # parse dictionary into json
-            result = simplejson.dumps(displayDictionary)
+            #result = simplejson.dumps(displayDictionary)
 
-            self.response.headers['Content-Type'] = 'application/json'
-            self.response.out.write(result)
+            #self.response.headers['Content-Type'] = 'application/json'
+            #self.response.out.write(result)
+            return displayDictionary
             
         else:
             print "No search term attached"
