@@ -123,6 +123,8 @@ class DisplayVideos(webapp.RequestHandler):
                         # Create a list of date-stamped views records for each video
                         viewsQuery = video.views.order('dateTime')
                         
+                        logging.info('viewsQuery %i', viewsQuery.count())
+                        
                         # reset the iterator
                         i = 0
 
@@ -174,13 +176,14 @@ class DisplayVideos(webapp.RequestHandler):
                     logging.info('videoIndex %i', videoIndex)
                     
                     # iterate and create big dictionary
-                    videoList[videoIndex] = { "info" : videoInfo, "data" : dataList}
+                    videoDictionary = { "info" : videoInfo, "data" : dataList}
+                    videoList.append(videoDictionary)
                     videoIndex = videoIndex + 1
                     
             displayDictionary[search.queryText] =  videoList
                        
             # parse dictionary into json
-            result = simplejson.dumps(videoAll)
+            result = simplejson.dumps(displayDictionary)
 
             self.response.headers['Content-Type'] = 'application/json'
             self.response.out.write(result)
