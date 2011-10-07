@@ -41,6 +41,7 @@ from urllib2 import HTTPError
 # Models
 
 # Constants
+HOST = "http://localhost:8082/"
 DATE_STRING_FORMAT = "%Y-%m-%dT%H:%M"
 TEN_MINUTES = datetime.timedelta(minutes=1)
 THIRTY_MINUTES = datetime.timedelta(minutes=30)
@@ -58,6 +59,14 @@ class MainHandler(webapp.RequestHandler):
     def get(self):
         path = os.path.join(os.path.dirname(__file__), 'index.html')
         self.response.out.write(template.render(path, {}))
+
+############################################ Main #########################################################
+
+class SearchHandler(webapp.RequestHandler):
+    def get(self):
+        path = os.path.join(os.path.dirname(__file__), 'search.html')
+        self.response.out.write(template.render(path, {}))
+
 
 ############################################ Display Mechanism ############################################   
 
@@ -295,9 +304,10 @@ class ScrapePage(webapp.RequestHandler):
               new_video.alertLevel = "initial"
               new_video.checkMeFlag = False
               new_video.put()
+          
                     
           #path = os.path.join(os.path.dirname(__file__), '/')
-          #self.response.out.write(template.render(path, {}))
+          self.response.out.write(HOST+"search?term="+search_term)
 
      def scrapeVideoInfo(self,result):
          """ All videos entries are within a href tag, so we have to go through each link 
@@ -444,6 +454,7 @@ def main():
                                           #('/tasks/search_routine', SearchRoutine),
                                           ('/tasks/scrape_views', ScrapeViews),
                                           ('/', MainHandler),
+                                          ('/search', SearchHandler),
                                           ('/output/display_videos', DisplayVideos)],
                                          debug=True)
     util.run_wsgi_app(application)
