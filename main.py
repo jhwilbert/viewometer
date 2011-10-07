@@ -115,6 +115,7 @@ class DisplayVideos(webapp.RequestHandler):
                     
                     # each video in the result set
                     for videoSearchIndex in videosBySearch:
+                        dataList = []
                         
                         video = videoSearchIndex.parent()
                         
@@ -173,14 +174,14 @@ class DisplayVideos(webapp.RequestHandler):
                         # turn info into dictionary
                         videoInfo = eval(video.json)
                     
-                    logging.info('videoIndex %i', videoIndex)
+                        logging.info('videoIndex %i', videoIndex)
                     
-                    # iterate and create big dictionary
-                    videoDictionary = { "info" : videoInfo, "data" : dataList}
-                    videoList.append(videoDictionary)
-                    videoIndex = videoIndex + 1
+                        # iterate and create big dictionary
+                        videoDictionary = { "info" : videoInfo, "data" : dataList}
+                        videoList.append(videoDictionary)
+                        videoIndex = videoIndex + 1
                     
-            displayDictionary[search.queryText] =  videoList
+                    displayDictionary[search.queryText] =  videoList
                        
             # parse dictionary into json
             result = simplejson.dumps(displayDictionary)
