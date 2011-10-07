@@ -68,6 +68,7 @@ input {
     float:left;
 }
 .legend {
+    float:left;
 
 overflow:hidden;
 }

@@ -41,6 +41,7 @@ from urllib2 import HTTPError
 # Models
 
 # Constants
+HOST = "http://localhost:8082/"
 DATE_STRING_FORMAT = "%Y-%m-%dT%H:%M"
 TEN_MINUTES = datetime.timedelta(minutes=1)
 THIRTY_MINUTES = datetime.timedelta(minutes=30)
@@ -58,6 +59,14 @@ class MainHandler(webapp.RequestHandler):
     def get(self):
         path = os.path.join(os.path.dirname(__file__), 'index.html')
         self.response.out.write(template.render(path, {}))
+
+############################################ Main #########################################################
+
+class SearchHandler(webapp.RequestHandler):
+    def get(self):
+        path = os.path.join(os.path.dirname(__file__), 'search.html')
+        self.response.out.write(template.render(path, {}))
+
 
 ############################################ Display Mechanism ############################################   
 
@@ -283,12 +292,13 @@ class ScrapePage(webapp.RequestHandler):
               linkcounter  += linkcounter
 
           # Selects By Upload Rate (it's a hack now, needs to be context independent)         
-          br.follow_link(search_links[15])
+          br.follow_link(search_links[16])
           
           html = br.response().read()          
           soup = BeautifulSoup(html)
           soup.prettify()
           
+          #print soup
           
           # Creates Video List For Results
           search_results = soup.findAll('div', attrs = {'class': "result-item *sr "})
@@ -320,9 +330,10 @@ class ScrapePage(webapp.RequestHandler):
               new_video.alertLevel = "initial"
               new_video.checkMeFlag = False
               new_video.put()
+          
                     
           #path = os.path.join(os.path.dirname(__file__), '/')
-          #self.response.out.write(template.render(path, {}))
+          self.response.out.write(HOST+"search?term="+search_term)
 
      def scrapeVideoInfo(self,result):
          """ All videos entries are within a href tag, so we have to go through each link 
@@ -335,13 +346,23 @@ class ScrapePage(webapp.RequestHandler):
          title = urls[3]['title']
          
          # Thumbnail - youtube has two image tags, testing which one is the real thumb
-         thumbs = result.findAll('img', attrs = {'alt' : 'Thumbnail'})
          
-         for thumb in thumbs:
-             thumb_url = "http:" + thumb['src']           
-             if thumb.has_key('data-thumb'):
-                 thumb_url = "http:" + thumb['data-thumb']
+         #thumbs = result.findAll('img', attrs = {'alt' : 'Thumbnail'})
+
+         thumb = result.findAll('img')[0];
          
+         if thumb.has_key('data-thumb'):
+             thumb_url = "http:" + thumb['data-thumb']
+         else:
+             thumb_url = "http:" + thumb['src']
+         
+         #print thumb_url
+         
+         # for thumb in thumbs:
+         #              thumb_url = "http:" + thumb['src']           
+         #              if thumb.has_key('data-thumb'):
+         #                  thumb_url = "http:" + thumb['data-thumb']
+         #          
          # Date Published - must do a calculator to get time object
          
          date_published = result.find('span', attrs = {'class' : 'date-added'}).find(text=True)
@@ -350,7 +371,7 @@ class ScrapePage(webapp.RequestHandler):
          
          
          ############# TODO ################
-         video = { "title" : title, "date_published" : date_published_str, "url" : "http://www.youtube.com" + url, "thumbs" : thumb_url}
+         video = { "title" : title, "date_published" : date_published_str, "url" : "http://www.youtube.com" + url, "thumbs" : thumb_url }
          
          return video
      
@@ -459,6 +480,7 @@ def main():
                                           #('/tasks/search_routine', SearchRoutine),
                                           ('/tasks/scrape_views', ScrapeViews),
                                           ('/', MainHandler),
+                                          ('/search', SearchHandler),
                                           ('/output/display_videos', DisplayVideos)],
                                          debug=True)
     util.run_wsgi_app(application)
