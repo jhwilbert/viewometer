@@ -63,7 +63,6 @@ function VideoEntry(key,val) {
 function GraphEntry(views,key) { 
     var graphdata = []
  
-    console.debug(views)
      $.each(views, function(index,value) {         
 
                   points = new Array(2);        
