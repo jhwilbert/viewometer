@@ -66,94 +66,120 @@ class DisplayVideos(webapp.RequestHandler):
     from decimal import *
        
     def get(self):
+        
+        
         from models import VideoData, VideoSearchIndex, SearchData, VideoViewsData
         
         """ 
         Displays all videos.        
         """
-        videoAll = {}
         
-        dataModelRetrieve = VideoData()  
+        # get the search term from the web request
+        search_term = self.request.get("search")
         
-        counter = 0
+        displayDictionary = {}
         
-        # for each video
-        for video in dataModelRetrieve.all():
+        
+        if search_term:
             
-            logging.info("title %s", video.json)
+            # so that I can find this in the log TODO: remove
+            logging.info('***************************************')
             
-            # Create a list of date-stamped views records for each video
-            dataList = []
-            viewsQuery = video.views.order('dateTime')
+            # query to find all the saved searches that match the string
+            searchesQuery = SearchData.all().filter('queryText = ', search_term) # order by priority TODO
+            logging.info('number of searches for %s: %i (should only ever be one)', search_term, searchesQuery.count())
             
-            i = 0
-            
-            for record in viewsQuery:
+            # if there is any result at all
+            if searchesQuery.get():
                 
-                viewsSpeed = 0.
-                viewsAcceleration = 0.
-                
-                # can't calculate speed/acceleration if there is only one entry
-                if i > 0:
-
-                    # get a timedelta object for how much time has passed
-                    timeDelta = record.dateTime - previousRecord.dateTime
-                    timeDeltaSeconds = float((timeDelta.microseconds + (timeDelta.seconds + timeDelta.days * 24 * 3600) * 10**6) / 10**6)
-                    logging.info("timeDeltaSeconds %i", timeDeltaSeconds)
-
-                    # get the change in the views
-                    viewsDelta = float(record.views - previousRecord.views)
-                    logging.info("viewsDelta %i", viewsDelta)
-
-                    # calculate the average speed since the last check in vps
-                    viewsSpeed = float(viewsDelta / timeDeltaSeconds) * 60 * 60
-                    logging.info("viewsSpeed %f", viewsSpeed)
-                                    
-                    # calculate the change in speed
-                    speedDelta = viewsSpeed - previousSpeed
-                    viewsAcceleration = speedDelta / timeDeltaSeconds * 60 * 60
-                    logging.info("viewsAcceleration %f", viewsAcceleration)
+                # for each search that matches
+                for search in searchesQuery:
+            
+                    # query to find all the videos that were found using this search term
+                    videosBySearch = VideoSearchIndex.all().filter('searchTerms = ', search)
+                    logging.info('number of videos for this search: %i', videosBySearch.count())
                     
+                    videoList = []
+                    videoIndex = 0
+                    videoInfo = {}
+                    dataList = []
                     
-                # We need to store the record for next time around
-                previousRecord = record
-                previousSpeed = viewsSpeed
-                
-                #getcontext().prec = 4 TODO
-                
-                # create a dictionary for each entry containing this data
-                dataDict = {"datetime": record.dateTime.strftime(DATE_STRING_FORMAT), "views": record.views, "speed": viewsSpeed, "acceleration": viewsAcceleration}
-                logging.info("dataDict %s", dataDict)
-                
-                # append this new dictionary to the list.
-                dataList.append(dataDict)
-                
-                i = i +1
-            
-            # get the searches index for the video
-            searchesIndex = VideoSearchIndex.get_by_key_name(video.token, parent=video)
-            
-            # Create a list of searches that found this video
+                    # each video in the result set
+                    for videoSearchIndex in videosBySearch:
+                        
+                        video = videoSearchIndex.parent()
+                        
+                        logging.info("title %s", video.json)
 
-            videoSearches = []
+                        # Create a list of date-stamped views records for each video
+                        viewsQuery = video.views.order('dateTime')
+                        
+                        # reset the iterator
+                        i = 0
 
-            if searchesIndex:
-                for key in searchesIndex.searchTerms:
-                    videoSearches.append(db.get(key).queryText)
-            
-            # turn info into dictionary
-            videoInfo = eval(video.json)
-            
-            # iterate and create big dictionary
-            videoAll[counter] = { "info" : videoInfo, "data" : dataList, "tags" : videoSearches}
-            counter = counter+1
+                        for record in viewsQuery:
+                            
+                            # have to declare these vars to make sure that they are floats
+                            viewsSpeed = 0.
+                            viewsAcceleration = 0.
+
+                            # can't calculate speed/acceleration if there is only one entry
+                            if i > 0:
+
+                                # get a timedelta object for how much time has passed
+                                timeDelta = record.dateTime - previousRecord.dateTime
+                                timeDeltaSeconds = float((timeDelta.microseconds + (timeDelta.seconds + timeDelta.days * 24 * 3600) * 10**6) / 10**6)
+                                logging.info("timeDeltaSeconds %i", timeDeltaSeconds)
+
+                                # get the change in the views
+                                viewsDelta = float(record.views - previousRecord.views)
+                                logging.info("viewsDelta %i", viewsDelta)
+
+                                # calculate the average speed since the last check in vps
+                                viewsSpeed = float(viewsDelta / timeDeltaSeconds) * 60 * 60
+                                logging.info("viewsSpeed %f", viewsSpeed)
+
+                                # calculate the change in speed
+                                speedDelta = viewsSpeed - previousSpeed
+                                viewsAcceleration = speedDelta / timeDeltaSeconds * 60 * 60
+                                logging.info("viewsAcceleration %f", viewsAcceleration)
+
+
+                            # We need to store the record for next time around
+                            previousRecord = record
+                            previousSpeed = viewsSpeed
+                            
+                            # create a dictionary for each entry containing this data
+                            dataDict = {"datetime": record.dateTime.strftime(DATE_STRING_FORMAT), "views": record.views, "speed": viewsSpeed, "acceleration": viewsAcceleration}
+                            logging.info("dataDict %s", dataDict)
+
+                            # append this new dictionary to the list.
+                            dataList.append(dataDict)
+                            
+                            # iterate counter
+                            i = i +1
+                        
+                        # turn info into dictionary
+                        videoInfo = eval(video.json)
                     
-        # parse dictionary into json
-        result = simplejson.dumps(videoAll)
-        
-        self.response.headers['Content-Type'] = 'application/json'
-        self.response.out.write(result)
+                    logging.info('videoIndex %i', videoIndex)
+                    
+                    # iterate and create big dictionary
+                    videoList[videoIndex] = { "info" : videoInfo, "data" : dataList}
+                    videoIndex = videoIndex + 1
+                    
+            displayDictionary[search.queryText] =  videoList
+                       
+            # parse dictionary into json
+            result = simplejson.dumps(videoAll)
 
+            self.response.headers['Content-Type'] = 'application/json'
+            self.response.out.write(result)
+            
+        else:
+            print "No search term attached"
+                        
+            
 ############################################ Storing Mechanism ############################################     
         
 class SelectBatch(webapp.RequestHandler):
