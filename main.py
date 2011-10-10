@@ -65,19 +65,19 @@ class MainHandler(webapp.RequestHandler):
 class SearchHandler(webapp.RequestHandler):
     def get(self):
         
+        search_term = self.request.get("search")
+                
+        searchDict = {'host': HOST, 'term' : search_term }
         
         path = os.path.join(os.path.dirname(__file__), 'search.html')
-        self.response.out.write(template.render(path, {}))
+        self.response.out.write(template.render(path,  searchDict ))
 
 
 ############################################ Display Mechanism ############################################   
 
 class DisplayVideos(webapp.RequestHandler):  
     
-    from decimal import *
-       
     def get(self):
-        
         
         from models import VideoData, VideoSearchIndex, SearchData, VideoViewsData
         
@@ -186,10 +186,10 @@ class DisplayVideos(webapp.RequestHandler):
                     displayDictionary[search.queryText] =  videoList
                        
             # parse dictionary into json
-            #result = simplejson.dumps(displayDictionary)
+            result = simplejson.dumps(displayDictionary)
 
-            #self.response.headers['Content-Type'] = 'application/json'
-            #self.response.out.write(result)
+            self.response.headers['Content-Type'] = 'application/json'
+            self.response.out.write(result)
             return displayDictionary
             
         else:
@@ -338,9 +338,9 @@ class ScrapePage(webapp.RequestHandler):
               new_video.checkMeFlag = False
               new_video.put()
           
-                    
+          # URL Structure: http://localhost:8082/search?search=steve+jobs            
           #path = os.path.join(os.path.dirname(__file__), '/')
-          self.response.out.write(HOST+"search?term="+search_term)
+          self.response.out.write(HOST+"search?search="+search_term.replace(" ", "+"))
 
      def scrapeVideoInfo(self,result):
          """ All videos entries are within a href tag, so we have to go through each link 
