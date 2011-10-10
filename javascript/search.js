@@ -1,50 +1,53 @@
 /* Arrays */
-videos = []
-graphs = []
-allVideos = []
-allLabels = []
+videos = [];
+graphs = [];
+allVideos = [];
+allLabels = [];
+arrObj = [];
 
 $(document).ready(function(){
     
-    $(document.createElement("div")).attr("id","allgraphs").appendTo("#container").css("width","960px").css("height","840px");
+    $(document.createElement("div")).attr("id","allgraphs").appendTo("#container").css("width","960px").css("height","540px");
     
     $.getJSON(jsonPath, function(data) {
-        
         dataObjects = data[searchTerm]
-
-         $.each(dataObjects, function(key, val) {
-                
+        
+        // Create Objects
+         $.each(dataObjects, function(key, val) {        
                 videos[key] = new VideoEntry(key,val);
-               
         });
     
+        // Graph Plotting
         var plot = $.plot($("#allgraphs"), arrObj, {
                    series: {
-                       lines: { show: true }, points: { show: true } },
+                        lines: { show: true }, points: { show: true } },
                          grid: { hoverable: true, clickable: true },
-                    xaxis: { mode: "time", timeformat: "%b %d <br> %H:%M",
+                         xaxis: { mode: "time", timeformat: "%b %d <br> %H:%M",
                      }
          });
+        $(".legend").hide();
          
-         var legend0 = $(".legend").children()[0];
-         var legend1 = $(".legend").children()[1];
-         legend0.style.width = "150px";
-         legend1.style.width = "150px";
+         // Graph Behaviour
+         $("#allgraphs").bind("plotclick", function (event, pos, item) {
+             if (item) {
+                 items = $("div:contains('"+item.series.label+"')");
+                 item = items[items.length-1];
+                 $.scrollTo(item,800);
+                 $(item.nextSibling).removeClass("off").addClass("on"); 
+             }
+         });
+                 
+
     });
-    
-    
-   
-    
 });
 
 /* Creates Video Entry */
-
 function VideoEntry(key,val) {
-    
-    
+
         // Create Video Elements (parent)
         $(document.createElement("div")).attr("id","video_"+key).appendTo("#container").addClass("span-24 border video")
-    
+
+        $(document.createElement("a")).attr("name","video_"+key).appendTo("#video_"+key).attr("id","video_"+key)
 
         // Create Title  (child)
         $(document.createElement("div")).attr("id","title_"+key).appendTo("#video_"+key).html(val.info['title']).addClass("title");
@@ -66,8 +69,7 @@ function VideoEntry(key,val) {
         graphs[key] = new GraphEntry(val.data,key,val.info['title']);
 
 
-            // Control
-        
+        // Behaviour    
         $("#title_"+key).click(function() {
             if($("#content_"+key).hasClass('on')) {
                 $("#content_"+key).removeClass("on").addClass("off");
@@ -75,28 +77,20 @@ function VideoEntry(key,val) {
                 $("#content_"+key).removeClass("off").addClass("on");                    
             }    
         });
-
-
-
 }
 
-arrObj = [];
 
 /* Creates Graph For Video Entry */
 
 function GraphEntry(views,key,label) { 
     var graphdata = []
 
- 
      $.each(views, function(index,value) {         
-
-                  points = new Array(2); 
-                  //label = "title"+index;
-                  points[0] = parseDate(value.datetime).getTime();
-                  points[1] = parseInt(value.views);      
-                  graphdata.push(points);
-
-          });
+           points = new Array(2); 
+           points[0] = parseDate(value.datetime).getTime();
+           points[1] = parseInt(value.views);      
+           graphdata.push(points);
+    });
      
      var options = {
        xaxis: {
@@ -104,9 +98,7 @@ function GraphEntry(views,key,label) {
            timeformat: "%b %d <br> %H:%M",
        }
      }
-     
 
-               
      $(function () {
          $.plot($("#graph_"+key), [graphdata], options);
      });
@@ -120,9 +112,7 @@ function GraphEntry(views,key,label) {
    	
 }
 
-
 /* Helper Functions */
-
 function parseDate(string) {
     string = string.split("T")
     stringTime = string[1]
