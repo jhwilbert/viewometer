@@ -43,7 +43,7 @@ from urllib2 import HTTPError
 # Constants
 HOST = "http://localhost:8082/"
 DATE_STRING_FORMAT = "%Y-%m-%dT%H:%M"
-TEN_MINUTES = datetime.timedelta(minutes=1)
+TEN_MINUTES = datetime.timedelta(minutes=10)
 THIRTY_MINUTES = datetime.timedelta(minutes=30)
 ONE_HOUR = datetime.timedelta(hours=1)
 HALF_DAY = datetime.timedelta(hours=12)
@@ -486,7 +486,6 @@ class ScrapeViews(webapp.RequestHandler):
 def main():
     application = webapp.WSGIApplication([('/tasks/select_batch', SelectBatch),
                                           ('/tasks/scrape_page', ScrapePage),
-                                          #('/tasks/search_routine', SearchRoutine),
                                           ('/tasks/scrape_views', ScrapeViews),
                                           ('/', MainHandler),
                                           ('/search', SearchHandler),
