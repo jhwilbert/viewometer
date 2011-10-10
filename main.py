@@ -391,7 +391,7 @@ class ScrapePage(webapp.RequestHandler):
         # get current datetime
         now = datetime.datetime.now()
         dateList = date.split(" ")
-        #upload_time = 0;
+        upload_time = now;
         
         #update current time with when the video was uploaded        
         if dateList[1] == "minutes" or dateList[1] == "minute":
