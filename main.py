@@ -391,6 +391,8 @@ class ScrapePage(webapp.RequestHandler):
         # get current datetime
         now = datetime.datetime.now()
         dateList = date.split(" ")
+        
+        # get the current time if youtube doesn't return any
         upload_time = now;
         
         #update current time with when the video was uploaded        

@@ -1,0 +1,38 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN"  "http://www.w3.org/TR/html4/strict.dtd">
+
+<html lang="en">
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<title>View-o-Meter : Youtube Trending Analysis Tool</title>
+	<meta name="generator" content="TextMate http://macromates.com/">
+	<meta name="author" content="Joao Wilbert">
+	<!-- Date: 2011-06-06 -->
+
+    <link type="text/css" rel="stylesheet" media="screen" href="css/styles.css" />
+	        
+	<!-- Jquery 1.6.1-->
+
+    <script type="text/javascript">
+        jsonPath = "{{ host }}output/display_videos?search={{ term }}".replace(/ /g, "+");
+        searchTerm = "{{ term }}"
+    </script>
+	<script type="text/javascript" src="javascript/jquery-1.6.1.min.js"></script>
+	<script type="text/javascript" src="javascript/search.js"></script>
+	<script type="text/javascript" src="javascript/jquery.flot.js"></script>	
+    
+    <!-- Framework CSS --> 
+    <link rel="stylesheet" href="css/screen.css" type="text/css" media="screen, projection">  
+    <link rel="stylesheet" href="css/print.css" type="text/css" media="print">
+    
+</head>
+<body>      
+    <div class="container showgrid">
+        
+     <div id="container" class="span-24 last">
+          <div id="#allgraphs"></div>
+
+      </div>   
+    </div>
+
+</body>
+</html>

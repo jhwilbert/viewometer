@@ -38,7 +38,6 @@ input {
 .video {
     padding:15px;
     float:left;
-    height:400px;
     margin-top:15px;
     background-color:#ededed;
 
@@ -46,14 +45,28 @@ input {
 
 /* Video Styles */
 
+.content {
+    float:left;
+}
+
+.on {
+    display: block;
+}
+
+.off {
+    display: none;
+}
+
 .thumb {
     float:left;
-    width:200px;
-    height:150px;
+    width:15
+    0px;
+    height:100px;
     margin:15px;
 }
 
 .title {
+    cursor:pointer;
     margin:10px;
     font-size:18px;
     font-weight:bold;
