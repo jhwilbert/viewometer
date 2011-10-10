@@ -6,10 +6,7 @@
 	<title>View-o-Meter : Youtube Trending Analysis Tool</title>
 	<meta name="generator" content="TextMate http://macromates.com/">
 	<meta name="author" content="Joao Wilbert">
-	<!-- Date: 2011-06-06 -->
-
-    <link type="text/css" rel="stylesheet" media="screen" href="css/styles.css" />
-	        
+        
 	<!-- Jquery 1.6.1-->
 
 	<script type="text/javascript" src="javascript/jquery-1.6.1.min.js"></script>
@@ -17,11 +14,13 @@
     <script type="text/javascript" src="javascript/jquery.form.js"></script>
     
     <!-- Framework CSS --> 
-  <link rel="stylesheet" href="css/screen.css" type="text/css" media="screen, projection">  
+  	<link rel="stylesheet" href="css/screen.css" type="text/css" media="screen, projection">  
     <link rel="stylesheet" href="css/print.css" type="text/css" media="print">
+  	<link rel="stylesheet" href="css/styles.css" type="text/css" media="screen, projection">  
     
 </head>
 <body>
+<<<<<<< HEAD
     <div class="container showgrid">
         
   <h1><strong>VIEW-O-METER</strong></h1>         
@@ -37,5 +36,22 @@
           <div id="url"></div>
       </div> 
     </div>
+=======
+	<div id="page">
+		<div id="header">
+			<div class="container showgrid">
+				<h1>View-O-Meter</h1>
+      			<div class="span-12 prepend-6 last"> 
+      			<form id="search" name="input" action="/tasks/scrape_page" method="get">
+              		<input type="text" name="search" />
+              		<button type="submit" value="Submit">Start Tracking</button>           
+          		</form>
+          	<div id="url"></div>
+      	</div>
+ 		<div id="content">
+ 			<div class="container showgrid">
+ 		</div>
+	</div>
+>>>>>>> d8b4b89853d9c06457e36fd2a1fce939181f8484
 </body>
 </html>
