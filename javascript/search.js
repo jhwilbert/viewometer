@@ -45,7 +45,7 @@ $(document).ready(function(){
 function VideoEntry(key,val) {
 
         // Create Video Elements (parent)
-        $(document.createElement("div")).attr("id","video_"+key).appendTo("#container").addClass("span-24 border video")
+        $(document.createElement("div")).attr("id","video_"+key).appendTo("#container").addClass("span-24 video")
 
         $(document.createElement("a")).attr("name","video_"+key).appendTo("#video_"+key).attr("id","video_"+key)
 

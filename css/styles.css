@@ -11,7 +11,8 @@ body {
 
 .graph {
     float:left;
-    padding:10px;
+
+    margin:30px;
 }
 
 button {
@@ -36,10 +37,11 @@ input {
 }
 
 .video {
-    padding:15px;
+    padding:10px;
     float:left;
-    margin-top:15px;
+    margin-top:5px;
     background-color:#ededed;
+    
 
 }
 
