@@ -4,31 +4,36 @@ body {
     font-family:Arial;
 }
 
+#page {
+}
+
 #header {
+    padding: 30px 0;
     background-color: #333;
+    color: #DDD;
 }
 
-.graph {
-    float:left;
-    padding:10px;
+#header h1 {
+    color: #EEE;
+    font-size: 3em;
+    text-align: center;
 }
 
-button {
-  color: black;
-  font-weight: bold;
-  font-size: 140%;
-  text-transform: uppercase;
+#search-box {
+    height: 40px;
+    font-size: 1.4em;
+    margin-bottom: 20px;
 }
 
-#search input {
-    height: 2.6em;
+#status {
+    color: #FFF333;
+    text-align: center;
+    display:none;
 }
 
-#search button{
-    margin: 0.5em 0;
-    height: 2em;
+#content {
+    padding: 30px 0;
 }
-
 .video {
     padding:15px;
     float:left;
