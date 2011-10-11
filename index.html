@@ -24,20 +24,26 @@
 		<div id="header">
 			<div class="container">
 				<h1>View-O-Meter</h1>
-      			<div class="span-14 prepend-5 append-5 last"> 
+      			<div id="search-form" class="span-14 prepend-5 append-5 last"> 
   					<form id="search" class="span-7" name="input" action="/tasks/scrape_page" method="get">
               			<input type="text" name="search" id="search-box" class="span-14 last" />
           			</form>
-				</div>
-				
+				</div>				
           		<div id="status" class="span-24 last"></div>
 			</div>
       	</div>
  		<div id="content">
- 			<div class="container showgrid">
- 				<div class="span-24 last">hello</div>
- 			</div>
- 		</div>
+	 			<div class="container showgrid">
+					{% for search in recentSearches %}
+					<div class="span-6 search-query {% cycle 'first' '' '' 'last' %}">
+						<h2>{{ search.queryText }}</h2>
+						<p class="create-date">Created: <span class="lighter">{{ search.created }}</span></p>
+						<p class="query-date">Queried: <span class="lighter">{{ search.lastQuery }}</span></p>
+					</div>
+					{% endfor %}
+	 			</div>
+	 		</div>
+		</div>
 	</div>
 </body>
 </html>

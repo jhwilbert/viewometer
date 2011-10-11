@@ -16,11 +16,17 @@
 #
 
 # Google
+import os
+os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
+from google.appengine.dist import use_library
+use_library('django', '1.2')
+
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp import util
 from google.appengine.api import urlfetch
 from google.appengine.ext import db
 from google.appengine.ext.webapp import template
+
 
 # Youtube
 import gdata.youtube.service
@@ -56,9 +62,37 @@ ALERT_LEVELS = {'initial': TEN_MINUTES,
 ############################################ Main #########################################################
 
 class MainHandler(webapp.RequestHandler):
+    
+    
     def get(self):
+        
+        
+        recentSearches = RecentSearches().generate()
+            
+        template_values = {
+            'recentSearches': recentSearches
+        }
+        
         path = os.path.join(os.path.dirname(__file__), 'index.html')
-        self.response.out.write(template.render(path, {}))
+        self.response.out.write(template.render(path, template_values))
+
+class RecentSearches():
+    def __init__(self):
+        pass
+        
+    def generate(self):
+        
+        from models import SearchData
+        
+        searchesQuery = SearchData.all().order('created')
+        
+        logging.info('searches count %i', searchesQuery.count())
+        
+        results = searchesQuery.fetch(5)
+        
+        return results
+        
+
 
 ############################################ Main #########################################################
 
