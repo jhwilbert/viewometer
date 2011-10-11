@@ -332,14 +332,12 @@ class ScrapePage(webapp.RequestHandler):
               linkcounter  += linkcounter
 
           # Selects By Upload Rate (it's a hack now, needs to be context independent)         
-          br.follow_link(search_links[16])
+          br.follow_link(search_links[17])
           
           html = br.response().read()          
           soup = BeautifulSoup(html)
           soup.prettify()
-          
-          #print soup
-          
+
           # Creates Video List For Results
           search_results = soup.findAll('div', attrs = {'class': "result-item *sr "})
           
@@ -516,7 +514,7 @@ class ScrapeViews(webapp.RequestHandler):
 ############################################ Retrieve recent searches  ###################################################
 
 
- class RecentSearches():
+class RecentSearches():
      def __init__(self):
          pass
 
