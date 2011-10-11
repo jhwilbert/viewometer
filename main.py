@@ -66,7 +66,7 @@ class MainHandler(webapp.RequestHandler):
     
     def get(self):
         
-        
+        # go and get the recent searches
         recentSearches = RecentSearches().generate()
             
         template_values = {
@@ -81,16 +81,27 @@ class RecentSearches():
         pass
         
     def generate(self):
+        from models import SearchData, VideoSearchIndex
         
-        from models import SearchData
+        # Construct a query to get all the searches
+        searchesQuery = SearchData.all().order('-created')
         
-        searchesQuery = SearchData.all().order('created')
+        # Create an empty list to hold these 
+        resultsList = []
         
-        logging.info('searches count %i', searchesQuery.count())
+        # Go through each search in the database
+        for search in searchesQuery:
+            
+            # filter videos by search. this is quick because it just holds keys *?*
+            videosBySearch = VideoSearchIndex.all().filter('searchTerms = ', search)
+            videosCount = videosBySearch.count()
+            search.count = videosCount
+            search.urlSafeQueryText = str(search.queryText).replace(' ', '+')
+            
+            # chuck each one at the end of the list
+            resultsList.append(search)
         
-        results = searchesQuery.fetch(5)
-        
-        return results
+        return resultsList
         
 
 
