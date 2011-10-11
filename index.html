@@ -47,6 +47,15 @@
 	 			</div>
 	 		</div>
 		</div>
+		<div id="user-panel">
+			{% if user %}
+				Hi, you are logged in as {{ user }}! <a href={{ logoutURL }}>Log out</a>
+			{% else %}
+				<a href={{ loginURL }}>Sign in with your Google account</a>
+			{% endif %}
+		</div>
+	
 	</div>
+	
 </body>
 </html>
