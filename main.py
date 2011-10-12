@@ -65,15 +65,18 @@ class MainHandler(webapp.RequestHandler):
     
     
     def get(self):
-        from google.appengine.api import users
         
+        from google.appengine.api import users
+        import queries
+        
+        # See if there is a user currently logged in
         user = users.get_current_user()
         
+        # Declarations
         loginUrl = None
         logoutUrl = None
         nickName = None
         
-
         if user:
             nickName = user.nickname()
             logoutUrl = users.create_logout_url(self.request.uri)
@@ -81,8 +84,9 @@ class MainHandler(webapp.RequestHandler):
             loginUrl = users.create_login_url(self.request.uri)
 
         # go and get the recent searches
-        recentSearches = RecentSearches().generate()
-            
+        recentSearches = queries.RecentSearches().generate()
+        
+        # Populate template    
         template_values = {
             'recentSearches': recentSearches,
             'user': nickName,
@@ -92,6 +96,7 @@ class MainHandler(webapp.RequestHandler):
         
         path = os.path.join(os.path.dirname(__file__), 'index.html')
         self.response.out.write(template.render(path, template_values))
+
 
 ############################################ Main #########################################################
 
@@ -112,7 +117,8 @@ class DisplayVideos(webapp.RequestHandler):
     
     def get(self):
         
-        from models import VideoData, VideoSearchIndex, SearchData, VideoViewsData
+        #from models import VideoData, VideoSearchIndex, SearchData, VideoViewsData
+        import queries
         
         """ 
         Displays all videos.        
@@ -121,103 +127,13 @@ class DisplayVideos(webapp.RequestHandler):
         # get the search term from the web request
         search_term = self.request.get("search")
         
-        displayDictionary = {}
         
         
         if search_term:
-            
-            # so that I can find this in the log TODO: remove
-            logging.info('***************************************')
-            
-            # query to find all the saved searches that match the string
-            searchesQuery = SearchData.all().filter('queryText = ', search_term) # order by priority TODO
-            logging.info('number of searches for %s: %i (should only ever be one)', search_term, searchesQuery.count())
-            
-            # if there is any result at all
-            if searchesQuery.get():
-                
-                # for each search that matches
-                for search in searchesQuery:
-            
-                    # query to find all the videos that were found using this search term
-                    videosBySearch = VideoSearchIndex.all().filter('searchTerms = ', search)
-                    logging.info('number of videos for this search: %i', videosBySearch.count())
-                    
-                    videoList = []
-                    videoIndex = 0
-                    videoInfo = {}
-                    dataList = []
-                    
-                    # each video in the result set
-                    for videoSearchIndex in videosBySearch:
-                        dataList = []
-                        
-                        video = videoSearchIndex.parent()
-                        
-                        logging.info("title %s", video.json)
 
-                        # Create a list of date-stamped views records for each video
-                        viewsQuery = video.views.order('dateTime')
-                        
-                        logging.info('viewsQuery %i', viewsQuery.count())
-                        
-                        # reset the iterator
-                        i = 0
-
-                        for record in viewsQuery:
-                            
-                            # have to declare these vars to make sure that they are floats
-                            viewsSpeed = 0.
-                            viewsAcceleration = 0.
-
-                            # can't calculate speed/acceleration if there is only one entry
-                            if i > 0:
-
-                                # get a timedelta object for how much time has passed
-                                timeDelta = record.dateTime - previousRecord.dateTime
-                                timeDeltaSeconds = float((timeDelta.microseconds + (timeDelta.seconds + timeDelta.days * 24 * 3600) * 10**6) / 10**6)
-                                logging.info("timeDeltaSeconds %i", timeDeltaSeconds)
-
-                                # get the change in the views
-                                viewsDelta = float(record.views - previousRecord.views)
-                                logging.info("viewsDelta %i", viewsDelta)
-
-                                # calculate the average speed since the last check in vps
-                                viewsSpeed = float(viewsDelta / timeDeltaSeconds) * 60 * 60
-                                logging.info("viewsSpeed %f", viewsSpeed)
-
-                                # calculate the change in speed
-                                speedDelta = viewsSpeed - previousSpeed
-                                viewsAcceleration = speedDelta / timeDeltaSeconds * 60 * 60
-                                logging.info("viewsAcceleration %f", viewsAcceleration)
-
-
-                            # We need to store the record for next time around
-                            previousRecord = record
-                            previousSpeed = viewsSpeed
-                            
-                            # create a dictionary for each entry containing this data
-                            dataDict = {"datetime": record.dateTime.strftime(DATE_STRING_FORMAT), "views": record.views, "speed": viewsSpeed, "acceleration": viewsAcceleration}
-                            logging.info("dataDict %s", dataDict)
-
-                            # append this new dictionary to the list.
-                            dataList.append(dataDict)
-                            
-                            # iterate counter
-                            i = i +1
-                        
-                        # turn info into dictionary
-                        videoInfo = eval(video.json)
-                    
-                        logging.info('videoIndex %i', videoIndex)
-                    
-                        # iterate and create big dictionary
-                        videoDictionary = { "info" : videoInfo, "data" : dataList}
-                        videoList.append(videoDictionary)
-                        videoIndex = videoIndex + 1
-                    
-                    displayDictionary[search.queryText] =  videoList
-                       
+            displayDictionary = {}
+            displayDictionary = queries.SelectVideosBySearchTerm().dictionary(search_term)
+                   
             # parse dictionary into json
             result = simplejson.dumps(displayDictionary)
 
@@ -513,35 +429,9 @@ class ScrapeViews(webapp.RequestHandler):
              views = 0
          return views           
 
-############################################ Retrieve recent searches  ###################################################
 
 
-class RecentSearches():
-     def __init__(self):
-         pass
-
-     def generate(self):
-         from models import SearchData, VideoSearchIndex
-
-         # Construct a query to get all the searches
-         searchesQuery = SearchData.all().order('-created')
-
-         # Create an empty list to hold these 
-         resultsList = []
-
-         # Go through each search in the database
-         for search in searchesQuery:
-
-             # filter videos by search. this is quick because it just holds keys *?*
-             videosBySearch = VideoSearchIndex.all().filter('searchTerms = ', search)
-             videosCount = videosBySearch.count()
-             search.count = videosCount
-             search.urlSafeQueryText = str(search.queryText).replace(' ', '+')
-
-             # chuck each one at the end of the list
-             resultsList.append(search)
-
-         return resultsList                                  
+                     
 ############################################ Handlers  ###################################################
 
 def main():
