@@ -223,7 +223,7 @@ class ScrapePage(webapp.RequestHandler):
             logging.info("Found existing search_term: %s", existing_search)
             search_query_key = existing_search
         
-        searchThis(search)
+        ScrapePage().searchThis(SearchData().get(search_query_key))
         # URL Structure: http://localhost:8082/search?search=steve+jobs            
         #path = os.path.join(os.path.dirname(__file__), '/')
         self.response.out.write(HOST+"search?search="+search_term.replace(" ", "+"))
