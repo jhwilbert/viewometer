@@ -84,7 +84,7 @@ class MainHandler(webapp.RequestHandler):
             loginUrl = users.create_login_url(self.request.uri)
 
         # go and get the recent searches
-        recentSearches = queries.RecentSearches().generate()
+        recentSearches = queries.RecentSearches().list()
         
         # Populate template    
         template_values = {
@@ -127,8 +127,6 @@ class DisplayVideos(webapp.RequestHandler):
         # get the search term from the web request
         search_term = self.request.get("search")
         
-        
-        
         if search_term:
 
             displayDictionary = {}
@@ -142,13 +140,14 @@ class DisplayVideos(webapp.RequestHandler):
             return displayDictionary
             
         else:
-            print "No search term attached"
+            print "No search term provided..."
                         
             
 ############################################ Storing Mechanism ############################################     
         
 class SelectBatch(webapp.RequestHandler):
     def get(self):
+        
         from models import VideoData, VideoViewsData
         
         """
@@ -183,153 +182,167 @@ class SelectBatch(webapp.RequestHandler):
         
         logging.info('Selected %i videos for checking', count)    
 
-#class SearchRoutine(webapp.RequestHandler):
-#    def get(self):
-#        from models import SearchData
+class SearchRoutine(webapp.RequestHandler):
+    def get(self):
+        from models import SearchData
+        
+        activeSearches = SearchData.all().filter("active =", True)
+        
+        logging.info("No. of active searches %i", activeSearches.count())
+        
+        for search in activeSearches:
+            
+            ScrapePage().searchThis(search)
+            search.put()
+            
         
             
 class ScrapePage(webapp.RequestHandler):
-     def get(self):
-          from models import VideoData, VideoSearchIndex, SearchData, VideoViewsData
-          """
-          Resource retrieves 20 most recent videos of You Tube given a search term. It retrieves them and stores in a datastore object
-          using Mechanize and Beautiful soup.
-          
-          Resource usage:
-          
-          /tasks/scrape_page?search=term
-          
-          """
-          search_term = self.request.get("search")
-          
-          logging.info("Executing")
-          
-          existing_search_query = db.GqlQuery("SELECT __key__ FROM SearchData WHERE queryText = :1", search_term)
-          existing_search = existing_search_query.get()
-          if existing_search is None:
-              logging.info("No existing search_term matches: %s", search_term)
-              new_search = SearchData()
-              new_search.queryText = search_term
-              new_search.put()
-              search_query_key = new_search.key()
-          else:
-              logging.info("Found existing search_term: %s", existing_search)
-              search_query_key = existing_search
-          
-          
-          br = gaemechanize.Browser()
-          
-          # Browser options
-          br.set_handle_equiv(True)
-          br.set_handle_gzip(True)
-          br.set_handle_redirect(True)
-          br.set_handle_referer(True)
-          br.set_handle_robots(False)
-
-          # User-Agent (this is cheating, ok?)
-          br.addheaders = [('User-agent', 'Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.0.1) Gecko/2008071615 Fedora/3.0.1-1.fc9 Firefox/3.0.1')]
-
-          # The site we will navigate into, handling it's session
-          br.open('http://www.youtube.com')
- 
-          # Scrape First Page Looking for Forms 
-          br.select_form(nr=1)
-          
-          # Executes Query with Given Word
-          br.form['search_query'] = search_term
-          br.submit()
-           
-          # Finds all links the page
-          search_links = [l for l in br.links()]
-          
-          linkcounter = 0
-
-          for link in search_links:
-              linkcounter  += linkcounter
-
-          # Selects By Upload Rate (it's a hack now, needs to be context independent)         
-          br.follow_link(search_links[16])
-          
-          html = br.response().read()          
-          soup = BeautifulSoup(html)
-          soup.prettify()
-          
-          # Creates Video List For Results
-          search_results = soup.findAll('div', attrs = {'class': "result-item *sr "})
-          
-          # Store in DB
-          new_video = VideoData()   
-                   
-          for result in search_results:
-              
-              # strip token from youtube url
-              vidtoken =  self.scrapeVideoInfo(result)['url'][31:42] 
-              
-              # Create a new VideoData object with the video token
-              new_video = VideoData(key_name=vidtoken)
-              
-              # If it doesn't exist already. TODO
-              #if VideoData.get(new_video.key()) is None:
-              new_video.token = vidtoken
-              new_video.json = simplejson.dumps(self.scrapeVideoInfo(result))
-              
-              viewsDate, views = self.scrapeVideoViews(result)
-              views_object = VideoViewsData(dateTime=viewsDate, views=views, video=new_video)
-              views_object.put()
-              
-              new_video_searchlist = VideoSearchIndex(key_name=new_video.token, parent=new_video)    
-              new_video_searchlist.searchTerms.append(search_query_key)
-              new_video_searchlist.put()
-                            
-              new_video.alertLevel = "initial"
-              new_video.checkMeFlag = False
-              new_video.put()
-          
-          # URL Structure: http://localhost:8082/search?search=steve+jobs            
-          #path = os.path.join(os.path.dirname(__file__), '/')
-          self.response.out.write(HOST+"search?search="+search_term.replace(" ", "+"))
-
-     def scrapeVideoInfo(self,result):
-         """ All videos entries are within a href tag, so we have to go through each link 
-         and find which one is which, so first URL is the link, third is title and so on....
-         """
-          
-         # URL & Title - get first entry url
-         urls = result.findAll('a')
-         url = urls[0]['href']
-         title = urls[3]['title']
+    def get(self):
+        from models import VideoData, VideoSearchIndex, SearchData, VideoViewsData
+        """
+        Resource retrieves 20 most recent videos of You Tube given a search term. It retrieves them and stores in a datastore object
+        using Mechanize and Beautiful soup.
          
-         # Thumbnail - youtube has two image tags, testing which one is the real thumb
+        Resource usage:
+          
+        /tasks/scrape_page?search=term
+          
+        """
+        search_term = self.request.get("search")
          
-         #thumbs = result.findAll('img', attrs = {'alt' : 'Thumbnail'})
-
-         thumb = result.findAll('img')[0];
-         
-         if thumb.has_key('data-thumb'):
-             thumb_url = "http:" + thumb['data-thumb']
-         else:
-             thumb_url = "http:" + thumb['src']
-         
-         #print thumb_url
-         
-         # for thumb in thumbs:
-         #              thumb_url = "http:" + thumb['src']           
-         #              if thumb.has_key('data-thumb'):
-         #                  thumb_url = "http:" + thumb['data-thumb']
-         #          
-         # Date Published - must do a calculator to get time object
-         
-         date_published = result.find('span', attrs = {'class' : 'date-added'}).find(text=True)
+        existing_search_query = db.GqlQuery("SELECT __key__ FROM SearchData WHERE queryText = :1", search_term)
+        existing_search = existing_search_query.get()
+        if existing_search is None:
+            logging.info("No existing search_term matches: %s", search_term)
+            new_search = SearchData()
+            new_search.queryText = search_term
+            new_search.put()
+            search_query_key = new_search.key()
+        else:
+            logging.info("Found existing search_term: %s", existing_search)
+            search_query_key = existing_search
         
-         date_published_str = self.formatDate(date_published).strftime(DATE_STRING_FORMAT)
+        searchThis(search)
+        # URL Structure: http://localhost:8082/search?search=steve+jobs            
+        #path = os.path.join(os.path.dirname(__file__), '/')
+        self.response.out.write(HOST+"search?search="+search_term.replace(" ", "+"))
+
+    def searchThis(self, search):
+        from models import VideoData, VideoViewsData, VideoSearchIndex
+        
+        search.lastQuery = datetime.datetime.now()
+        br = gaemechanize.Browser()
+          
+        # Browser options
+        br.set_handle_equiv(True)
+        br.set_handle_gzip(True)
+        br.set_handle_redirect(True)
+        br.set_handle_referer(True)
+        br.set_handle_robots(False)
+
+        # User-Agent (this is cheating, ok?)
+        br.addheaders = [('User-agent', 'Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.0.1) Gecko/2008071615 Fedora/3.0.1-1.fc9 Firefox/3.0.1')]
+
+        # The site we will navigate into, handling its session
+        br.open('http://www.youtube.com')
+
+        # Scrape First Page Looking for Forms 
+        br.select_form(nr=1)
+          
+        # Executes Query with Given Word
+        br.form['search_query'] = search.queryText
+        br.submit()
+           
+        # Finds all links the page
+        search_links = [l for l in br.links()]
+          
+        linkcounter = 0
+
+        for link in search_links:
+            linkcounter  += linkcounter
+
+        # Selects By Upload Rate (it's a hack now, needs to be context independent)         
+        br.follow_link(search_links[16])
+          
+        html = br.response().read()          
+        soup = BeautifulSoup(html)
+        soup.prettify()
+          
+        # Creates Video List For Results
+        search_results = soup.findAll('div', attrs = {'class': "result-item *sr "})
+          
+        # Store in DB
+        new_video = VideoData()   
+                   
+        for result in search_results:
+              
+            # strip token from youtube url
+            vidtoken =  self.scrapeVideoInfo(result)['url'][31:42] 
+              
+            # Create a new VideoData object with the video token
+            new_video = VideoData(key_name=vidtoken)
+              
+            # If it doesn't exist already. TODO
+            #if VideoData.get(new_video.key()) is None:
+            new_video.token = vidtoken
+            new_video.json = simplejson.dumps(self.scrapeVideoInfo(result))
+              
+            viewsDate, views = self.scrapeVideoViews(result)
+            views_object = VideoViewsData(dateTime=viewsDate, views=views, video=new_video)
+            views_object.put()
+              
+            new_video_searchlist = VideoSearchIndex(key_name=new_video.token, parent=new_video)    
+            new_video_searchlist.searchTerms.append(search.key())
+            new_video_searchlist.put()
+                            
+            new_video.alertLevel = "initial"
+            new_video.checkMeFlag = False
+            new_video.put()
+          
+
+
+    def scrapeVideoInfo(self,result):
+        """ All videos entries are within a href tag, so we have to go through each link 
+        and find which one is which, so first URL is the link, third is title and so on....
+        """
+          
+        # URL & Title - get first entry url
+        urls = result.findAll('a')
+        url = urls[0]['href']
+        title = urls[3]['title']
+         
+        # Thumbnail - youtube has two image tags, testing which one is the real thumb
+         
+        #thumbs = result.findAll('img', attrs = {'alt' : 'Thumbnail'})
+
+        thumb = result.findAll('img')[0];
+         
+        if thumb.has_key('data-thumb'):
+            thumb_url = "http:" + thumb['data-thumb']
+        else:
+            thumb_url = "http:" + thumb['src']
+         
+        #print thumb_url
+         
+        # for thumb in thumbs:
+        #              thumb_url = "http:" + thumb['src']           
+        #              if thumb.has_key('data-thumb'):
+        #                  thumb_url = "http:" + thumb['data-thumb']
+        #          
+        # Date Published - must do a calculator to get time object
+         
+        date_published = result.find('span', attrs = {'class' : 'date-added'}).find(text=True)
+        
+        date_published_str = self.formatDate(date_published).strftime(DATE_STRING_FORMAT)
          
          
-         ############# TODO ################
-         video = { "title" : title, "date_published" : date_published_str, "url" : "http://www.youtube.com" + url, "thumbs" : thumb_url }
+        ############# TODO ################
+        video = { "title" : title, "date_published" : date_published_str, "url" : "http://www.youtube.com" + url, "thumbs" : thumb_url }
          
-         return video
+        return video
      
-     def formatDate(self,date):
+    def formatDate(self,date):
         """ 
         Time calculator function that turns Youtube format x minutes ago into date 
         objects to store in DB
@@ -350,7 +363,7 @@ class ScrapePage(webapp.RequestHandler):
 
         return upload_time
         
-     def scrapeVideoViews(self,result):
+    def scrapeVideoViews(self,result):
 
         viewsdict = {}
 
@@ -438,6 +451,7 @@ def main():
     application = webapp.WSGIApplication([('/tasks/select_batch', SelectBatch),
                                           ('/tasks/scrape_page', ScrapePage),
                                           ('/tasks/scrape_views', ScrapeViews),
+                                          ('/tasks/search_routine', SearchRoutine),
                                           ('/', MainHandler),
                                           ('/search', SearchHandler),
                                           ('/output/display_videos', DisplayVideos)],

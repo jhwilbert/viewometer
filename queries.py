@@ -82,31 +82,36 @@ class SelectVideosBySearchTerm():
 ############################################ Retrieve recent searches  ###################################################
 
 class RecentSearches():
-     def __init__(self):
-         pass
+    
+    """
+    Return a set of searches.
+    """
+    
+    def __init__(self):
+        pass
 
-     def generate(self):
-         from models import SearchData, VideoSearchIndex
+    def list(self):
+        from models import SearchData, VideoSearchIndex
 
-         # Construct a query to get all the searches
-         searchesQuery = SearchData.all().order('-created')
+        # Construct a query to get all the searches
+        searchesQuery = SearchData.all().order('-created')
 
-         # Create an empty list to hold these 
-         resultsList = []
+        # Create an empty list to hold these 
+        resultsList = []
 
-         # Go through each search in the database
-         for search in searchesQuery:
+        # Go through each search in the database
+        for search in searchesQuery:
 
-             # filter videos by search. this is quick because it just holds keys *?*
-             videosBySearch = VideoSearchIndex.all().filter('searchTerms = ', search)
-             videosCount = videosBySearch.count()
-             search.count = videosCount
-             search.urlSafeQueryText = str(search.queryText).replace(' ', '+')
+            # filter videos by search. this is quick because it just holds keys *?*
+            videosBySearch = VideoSearchIndex.all().filter('searchTerms = ', search)
+            videosCount = videosBySearch.count()
+            search.count = videosCount
+            search.urlSafeQueryText = str(search.queryText).replace(' ', '+')
 
-             # chuck each one at the end of the list
-             resultsList.append(search)
+            # chuck each one at the end of the list
+            resultsList.append(search)
 
-         return resultsList
+        return resultsList
          
 
 ############################################ Calculate view data  ###################################################
