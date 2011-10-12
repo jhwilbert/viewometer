@@ -444,9 +444,10 @@ class ScrapePage(webapp.RequestHandler):
          
         viewcount = result.find('span', attrs = {'class' : 'viewcount'}).find(text=True)
         
-        views = int(viewcount[0:-6])
+        viewcount = viewcount.replace(",","")
+        viewcount = int(viewcount[0:-6])
 
-        return now, views
+        return now, viewcount
 
 class ScrapeViews(webapp.RequestHandler):
     def get(self):
