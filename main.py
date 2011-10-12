@@ -332,12 +332,12 @@ class ScrapePage(webapp.RequestHandler):
               linkcounter  += linkcounter
 
           # Selects By Upload Rate (it's a hack now, needs to be context independent)         
-          br.follow_link(search_links[17])
+          br.follow_link(search_links[16])
           
           html = br.response().read()          
           soup = BeautifulSoup(html)
           soup.prettify()
-
+          
           # Creates Video List For Results
           search_results = soup.findAll('div', attrs = {'class': "result-item *sr "})
           
@@ -447,6 +447,7 @@ class ScrapePage(webapp.RequestHandler):
         viewcount = viewcount.replace(",","")
         viewcount = int(viewcount[0:-6])
 
+        #print viewcount
         return now, viewcount
 
 class ScrapeViews(webapp.RequestHandler):

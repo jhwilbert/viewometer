@@ -35,7 +35,7 @@
  		<div id="content">
 	 			<div class="container">
 					{% for search in recentSearches %}
-					<a href="/output/display_videos?search={{ search.urlSafeQueryText }}">
+					<a href="search?search={{ search.urlSafeQueryText }}">
 						<div class="span-6 search-query linked-search {% cycle 'first' '' '' 'last' %}" data-url="/output/display_videos?search={{ search.urlSafeQueryText }}">
 							<h2>{{ search.queryText }}</h2>
 							<h3>videos: <span class="lighter">{{ search.count }}</span></h3>
