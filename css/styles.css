@@ -2,7 +2,8 @@
 
 body {	
     font-family:Arial;
-    background-color:#f2f2ec;
+    background-color: #f2f2ec;
+    overflow-x: hidden;
 }
 
 #page {
@@ -69,6 +70,7 @@ a {
     margin: 10px 10px 8px 10px; 
 }
 
+
 .search-query p,
 .search-query h3 {
     color: #777;
@@ -86,7 +88,7 @@ a {
 .video {
     float:left;
     margin-top:5px;
-    background-color:#ededed;
+    background-color:#e0e0d2;
     
 
 }
@@ -107,29 +109,33 @@ a {
 
 .thumb {
     float:left;
-    width:15
-    0px;
-    height:100px;
-    margin:15px;
+    padding-right:10px;
+    width:80px;
+    height:60px;
+    margin:0px;
 }
 
 .title {
     color:white;
     background-color: #333;
     cursor:pointer;
-    padding:20px;
-    font-size:18px;
+    padding:10px;
+    height:60px;
+    font-size:14px;
     font-weight:bold;
 }
 
 .published {
     float:left;
+    font-size:10px;
+    font-weight:normal;
+}
+.link {
+    font-weight:normal;
     font-size:12px;
 }
 
-.link {
-    float:left;
-}
+
 .legend {
     float:left;
 

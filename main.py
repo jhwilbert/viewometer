@@ -49,7 +49,7 @@ from urllib2 import HTTPError
 # Constants
 HOST = "http://localhost:8082/"
 DATE_STRING_FORMAT = "%Y-%m-%dT%H:%M"
-TEN_MINUTES = datetime.timedelta(minutes=10)
+TEN_MINUTES = datetime.timedelta(minutes=1)
 THIRTY_MINUTES = datetime.timedelta(minutes=30)
 ONE_HOUR = datetime.timedelta(hours=1)
 HALF_DAY = datetime.timedelta(hours=12)

@@ -56,13 +56,13 @@ function VideoEntry(key,val) {
         $(document.createElement("div")).attr("id","content_"+key).appendTo("#video_"+key).addClass("off");
             
         // Create Image  (child)
-        $(document.createElement("img")).attr({ src: val.info['thumbs'] }).attr("id","img_"+key).appendTo("#content_"+key).addClass("thumb");
+        $(document.createElement("img")).attr({ src: val.info['thumbs'] }).attr("id","img_"+key).appendTo("#title_"+key).addClass("thumb");
         
          // Create URL  (child)
-        $(document.createElement("div")).attr("id","url_"+key).appendTo("#content_"+key).html("<a href="+val.info['url']+">" + val.info['url']+"</a>").addClass("link");
+        $(document.createElement("div")).attr("id","url_"+key).appendTo("#title_"+key).html("<a href="+val.info['url']+">" + val.info['url']+"</a>").addClass("link");
         
          // Create Date  (child)
-        $(document.createElement("div")).attr("id","date_"+key).appendTo("#content_"+key).html("Published on:" + val.info['date_published']).addClass("published");
+        $(document.createElement("div")).attr("id","date_"+key).appendTo("#title_"+key).html(val.info['date_published']).addClass("published");
                
         $(document.createElement("div")).attr("id","graph_"+key).appendTo("#content_"+key).addClass("graph").css("width","900px").css("height","240px");
         
