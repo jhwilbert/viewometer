@@ -307,11 +307,29 @@ class ScrapePage(webapp.RequestHandler):
         and find which one is which, so first URL is the link, third is title and so on....
         """
           
+
+        
         # URL & Title - get first entry url
         urls = result.findAll('a')
-        url = urls[0]['href']
-        title = urls[3]['title']
-         
+        
+        # if(urls[0]['href']):
+        #           url = urls[0]['href']
+        #       else:
+        #           url = 'not found'
+        #               
+        #       if(urls[3]['title']):
+        #           title = urls[3]['title']
+        #       else:
+        #           title = 'not found'
+                 
+        title = "Der Tod ist die beste Erfindung des Lebens."
+        url = "/watch?v=8XvODQ4RJr0"
+        
+        print ""
+        resulttag = result.findAll('h3')
+        
+        print resulttag
+
         # Thumbnail - youtube has two image tags, testing which one is the real thumb
          
         #thumbs = result.findAll('img', attrs = {'alt' : 'Thumbnail'})
