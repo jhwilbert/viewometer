@@ -134,13 +134,14 @@ class CalculateViewData():
 
         # get the change in the views
         viewsDelta = float(recordA.views - recordB.views)
-
+        
+        if timeDeltaSeconds != 0.0:
         # calculate the average speed since the last check in vps
-        recordASpeed = float(viewsDelta / timeDeltaSeconds) * 60 * 60
-
+            recordASpeed = float(viewsDelta / timeDeltaSeconds) * 60 * 60
+        
         # calculate the change in speed
-        speedDelta = recordASpeed - recordBSpeed
-        viewsAcceleration = speedDelta / timeDeltaSeconds * 60 * 60
+            speedDelta = recordASpeed - recordBSpeed
+            viewsAcceleration = speedDelta / timeDeltaSeconds * 60 * 60
         
         return viewsSpeed, viewsAcceleration
         

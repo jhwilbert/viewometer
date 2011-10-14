@@ -47,6 +47,7 @@ from urllib2 import HTTPError
 # Models
 
 # Constants
+#HOST = "http://localhost:8082/"
 HOST = "http://viewometer.appspot.com/"
 DATE_STRING_FORMAT = "%Y-%m-%dT%H:%M"
 TEN_MINUTES = datetime.timedelta(minutes=1)
@@ -273,12 +274,13 @@ class ScrapePage(webapp.RequestHandler):
           
         # Store in DB
         new_video = VideoData()   
+
                    
         for result in search_results:
-              
+            
             # strip token from youtube url
             vidtoken =  self.scrapeVideoInfo(result)['url'][31:42] 
-              
+            
             # Create a new VideoData object with the video token
             new_video = VideoData(key_name=vidtoken)
               
@@ -305,33 +307,24 @@ class ScrapePage(webapp.RequestHandler):
         """ All videos entries are within a href tag, so we have to go through each link 
         and find which one is which, so first URL is the link, third is title and so on....
         """
-        
-        
-        url = "Couldn't find URL"
-        title = "Couldn't find title"
-        
+                
+        #title = "unknown"
+        #url = "/watch?v=2Vh_b8Y4Sqc"
         contentsdiv = result.findAll('a')
-        
-        if len(contentsdiv) >= 6:
-            #print ''
+
+        if len(contentsdiv) > 1:
             try:
                 url = contentsdiv[0]['href']
-                #print contentsdiv[0]['href']
-            except ValueError:
-                url = "no link"
 
-            try:
-                url = contentsdiv[3]['title']
-                #print contentsdiv[3]['title']
             except ValueError:
-                url = "no title"
-
-        #print result.findAll('a')
+                url = "/watch?v=ofZUe46cHE4"
         
-        #    title = result.findAll('a')[3]['title']
-        #except ValueError:
-        #    title = "no title"
+            try:
+                title = contentsdiv[3]['title']
 
+            except ValueError:
+                title = "Unknown"
+                
         # Thumbnail - youtube has two image tags, testing which one is the real thumb
          
         #thumbs = result.findAll('img', attrs = {'alt' : 'Thumbnail'})
