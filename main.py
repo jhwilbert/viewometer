@@ -47,7 +47,7 @@ from urllib2 import HTTPError
 # Models
 
 # Constants
-HOST = "http://localhost:8082/"
+HOST = "http://viewometer.appspot.com/"
 DATE_STRING_FORMAT = "%Y-%m-%dT%H:%M"
 TEN_MINUTES = datetime.timedelta(minutes=1)
 THIRTY_MINUTES = datetime.timedelta(minutes=30)
@@ -223,8 +223,7 @@ class ScrapePage(webapp.RequestHandler):
             logging.info("Found existing search_term: %s", existing_search)
             search_query_key = existing_search
         
-        ScrapePage().searchThis(SearchData().get(search_query_key))
-        # URL Structure: http://localhost:8082/search?search=steve+jobs            
+        ScrapePage().searchThis(SearchData().get(search_query_key))         
         #path = os.path.join(os.path.dirname(__file__), '/')
         self.response.out.write(HOST+"search?search="+search_term.replace(" ", "+"))
 
@@ -306,29 +305,32 @@ class ScrapePage(webapp.RequestHandler):
         """ All videos entries are within a href tag, so we have to go through each link 
         and find which one is which, so first URL is the link, third is title and so on....
         """
-          
+        
+        
+        url = "Couldn't find URL"
+        title = "Couldn't find title"
+        
+        contentsdiv = result.findAll('a')
+        
+        if len(contentsdiv) >= 6:
+            #print ''
+            try:
+                url = contentsdiv[0]['href']
+                #print contentsdiv[0]['href']
+            except ValueError:
+                url = "no link"
 
+            try:
+                url = contentsdiv[3]['title']
+                #print contentsdiv[3]['title']
+            except ValueError:
+                url = "no title"
+
+        #print result.findAll('a')
         
-        # URL & Title - get first entry url
-        urls = result.findAll('a')
-        
-        # if(urls[0]['href']):
-        #           url = urls[0]['href']
-        #       else:
-        #           url = 'not found'
-        #               
-        #       if(urls[3]['title']):
-        #           title = urls[3]['title']
-        #       else:
-        #           title = 'not found'
-                 
-        title = "Der Tod ist die beste Erfindung des Lebens."
-        url = "/watch?v=8XvODQ4RJr0"
-        
-        print ""
-        resulttag = result.findAll('h3')
-        
-        print resulttag
+        #    title = result.findAll('a')[3]['title']
+        #except ValueError:
+        #    title = "no title"
 
         # Thumbnail - youtube has two image tags, testing which one is the real thumb
          
