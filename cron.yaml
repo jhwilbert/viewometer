@@ -10,3 +10,9 @@ cron:
 - description: select videos to check
   url: /tasks/select_batch
   schedule: every 2 minutes
+
+- description: update searches with new videos
+  url: /tasks/search_routine
+  schedule: every 1 hour
+  
+  
