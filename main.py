@@ -50,7 +50,7 @@ from urllib2 import HTTPError
 #HOST = "http://localhost:8082/"
 HOST = "http://viewometer.appspot.com/"
 DATE_STRING_FORMAT = "%Y-%m-%dT%H:%M"
-TEN_MINUTES = datetime.timedelta(minutes=1)
+TEN_MINUTES = datetime.timedelta(minutes=10)
 THIRTY_MINUTES = datetime.timedelta(minutes=30)
 ONE_HOUR = datetime.timedelta(hours=1)
 HALF_DAY = datetime.timedelta(hours=12)
