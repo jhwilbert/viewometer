@@ -13,6 +13,6 @@ cron:
 
 - description: update searches with new videos
   url: /tasks/search_routine
-  schedule: every 1 hour
+  schedule: every 60 minutes
   
   
